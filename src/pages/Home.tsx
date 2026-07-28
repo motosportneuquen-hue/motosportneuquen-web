@@ -1,6 +1,7 @@
 import { ArrowRight, ChevronRight, Headphones, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FeaturedProducts from '../components/FeaturedProducts';
+import MotoFinder from '../components/MotoFinder';
 
 const categories = [
   { name: 'Repuestos', copy: 'Todo para mantener tu moto siempre lista.' },
@@ -66,6 +67,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <MotoFinder />
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
         <div className="mb-9 flex items-end justify-between gap-4">
