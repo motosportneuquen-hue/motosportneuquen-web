@@ -1,377 +1,243 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronDown, Filter, SlidersHorizontal, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { useCallback, useMemo } from 'react';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { useCartStore } from '../store/cartStore';
 import ProductCard from '../components/ProductCard';
 import QuickView from '../components/QuickView';
-import { Product } from '../types/supabase';
-import { Filter } from 'lucide-react';
 import { formatARS } from '../lib/currency';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useCartStore } from '../store/cartStore';
+import { Product } from '../types/supabase';
 
 const motoModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
 
-export default function ProductosPage() {
-  const [products, setProductos] = useState<Product[]>([]);
-  const [categories, setCategorias] = useState<string[]>([]);
+function SelectField({
+  id,
+  label,
+  value,
+  onChange,
+  children,
+  highlighted = false,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+  highlighted?: boolean;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-white/65">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`h-13 w-full appearance-none rounded-xl bg-black px-4 pr-10 text-sm font-bold text-white outline-none transition focus:ring-2 focus:ring-primary/15 ${
+            highlighted ? 'border border-primary/60 focus:border-primary' : 'border border-white/15 focus:border-primary'
+          }`}
+        >
+          {children}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
+      </div>
+    </div>
+  );
+}
+
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
-  const [maxPrice, setMaxPrice] = useState<number>(1000);
-  const [showFiltros, setShowFiltros] = useState(false);
-  const [sortBy, setSortBy] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('');
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  
+
   const addItem = useCartStore((state) => state.addItem);
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchQuery = searchParams.get('search') || '';
   const categoryParam = searchParams.get('category') || '';
   const modelParam = searchParams.get('model') || '';
 
   useEffect(() => {
-    if (categoryParam && categoryParam !== selectedCategory) {
-      setSelectedCategory(categoryParam);
-    }
-  }, [categoryParam, selectedCategory]);
+    if (categoryParam) setSelectedCategory(categoryParam);
+  }, [categoryParam]);
 
   useEffect(() => {
-    if (modelParam && modelParam !== selectedModel) {
-      setSelectedModel(modelParam);
-    }
-  }, [modelParam, selectedModel]);
+    if (modelParam) setSelectedModel(modelParam);
+  }, [modelParam]);
 
-  const fetchProductos = useCallback(async () => {
+  const fetchProducts = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setProductos([]);
+      setProducts([]);
       setLoading(false);
       return;
     }
 
-    // Don't set loading to true if we're just sorting
-    if (!sortBy) {
-      setLoading(true);
-    }
-    
-    // Build the query
+    setLoading(true);
     let query = supabase.from('products').select('*');
-    
-    // Apply category filter
-    if (selectedCategory) {
-      query = query.eq('category', selectedCategory);
-    }
-
-    if (selectedModel) {
-      query = query.eq('motorcycle_model', selectedModel);
-    }
-    
-    // Apply price range filter
+    if (selectedCategory) query = query.eq('category', selectedCategory);
+    if (selectedModel) query = query.eq('motorcycle_model', selectedModel);
     query = query.gte('price', priceRange[0]).lte('price', priceRange[1]);
-    
-    // Apply search filter
-    if (searchQuery) {
-      query = query.ilike('name', `%${searchQuery}%`);
-    }
-    
-    // Apply sorting
-    if (sortBy === 'price-asc') {
-      query = query.order('price', { ascending: true });
-    } else if (sortBy === 'price-desc') {
-      query = query.order('price', { ascending: false });
-    } else if (sortBy === 'newest') {
-      query = query.order('created_at', { ascending: false });
-    } else {
-      query = query.order('category', { ascending: true }).order('name', { ascending: true });
-    }
-    
+    if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
+
+    if (sortBy === 'price-asc') query = query.order('price', { ascending: true });
+    else if (sortBy === 'price-desc') query = query.order('price', { ascending: false });
+    else if (sortBy === 'newest') query = query.order('created_at', { ascending: false });
+    else query = query.order('category', { ascending: true }).order('name', { ascending: true });
+
     const { data, error } = await query;
-    
-    if (error) {
-      console.error(error);
-    } else {
-      setProductos(data || []);
-    }
-    
+    if (error) console.error(error);
+    else setProducts(data || []);
     setLoading(false);
   }, [priceRange, searchQuery, selectedCategory, selectedModel, sortBy]);
 
-  const fetchCategorias = async () => {
-    if (!isSupabaseConfigured) {
-      setCategorias([]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('categories')
-      .select('name')
-      .order('orden', { ascending: true })
-      .order('created_at', { ascending: false });
-
-    const { data: productsData, error: productsError } = await supabase
-      .from('products')
-      .select('category');
-      
-    if (error || productsError) {
-      console.error(error || productsError);
-    } else {
-      const categoriesWithProducts = new Set((productsData || []).map((item) => item.category));
-      const uniqueCategorias = [...new Set(data.map(item => item.name))]
-        .filter((category) => categoriesWithProducts.has(category));
-      setCategorias(uniqueCategorias);
-    }
-  };
-
-  const fetchMaxPrice = async () => {
-    if (!isSupabaseConfigured) {
-      setMaxPrice(1000);
-      setPriceRange([0, 1000]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('products')
-      .select('price')
-      .order('price', { ascending: false })
-      .limit(1);
-      
-    if (error) {
-      console.error(error);
-    } else if (data && data.length > 0) {
-      const maxPriceValue = Math.ceil(data[0].price);
-      setMaxPrice(maxPriceValue);
-      setPriceRange([0, maxPriceValue]);
-    }
-  };
-
   useEffect(() => {
-    fetchCategorias();
-    fetchMaxPrice();
+    async function loadFilterData() {
+      if (!isSupabaseConfigured) return;
+      const [{ data: categoryData }, { data: productCategories }, { data: prices }] = await Promise.all([
+        supabase.from('categories').select('name').order('orden', { ascending: true }),
+        supabase.from('products').select('category'),
+        supabase.from('products').select('price').order('price', { ascending: false }).limit(1),
+      ]);
+
+      const usedCategories = new Set((productCategories || []).map((item) => item.category));
+      setCategories([...new Set((categoryData || []).map((item) => item.name))].filter((category) => usedCategories.has(category)));
+
+      if (prices?.length) {
+        const highestPrice = Math.ceil(prices[0].price);
+        setMaxPrice(highestPrice);
+        setPriceRange([0, highestPrice]);
+      }
+    }
+    loadFilterData();
   }, []);
 
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      fetchProductos();
-    }, 300); // Add a small delay to prevent rapid re-fetching
+    const timer = setTimeout(fetchProducts, 250);
+    return () => clearTimeout(timer);
+  }, [fetchProducts]);
 
-    return () => clearTimeout(debounceTimer);
-  }, [fetchProductos]);
-
-  const resetFiltros = () => {
+  const resetFilters = () => {
     setSelectedCategory('');
     setSelectedModel('');
     setPriceRange([0, maxPrice]);
     setSortBy('');
   };
 
-  const visibleProducts = useMemo(
-    () => [...products].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })),
-    [products]
-  );
+  const activeFilterCount = [selectedCategory, selectedModel, priceRange[1] < maxPrice ? 'price' : ''].filter(Boolean).length;
 
   return (
-    <div className="container mx-auto py-6 sm:py-10">
-      <div className="mb-8 border border-primary/30 bg-black/45 backdrop-blur-sm rounded-lg p-4 md:p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="break-words text-2xl font-black uppercase tracking-wide text-white sm:text-4xl md:text-5xl lg:text-6xl">
-            {searchQuery ? `Resultados para "${searchQuery}"` : selectedCategory ? `Productos por categoria: ${selectedCategory}` : 'Productos por categoria'}
-          </h1>
-        </div>
-        <p className="text-gray-300 text-sm md:text-base">
-          Selecciona tu repuesto ideal con el estilo de <span className="text-primary font-bold">MotoSport Neuquén</span>.
+    <div className="container py-8 sm:py-14">
+      <div className="mb-10 max-w-3xl">
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">Catálogo</p>
+        <h1 className="mt-3 break-words text-4xl font-black uppercase tracking-tight text-white sm:text-6xl">
+          {searchQuery ? `Resultados para "${searchQuery}"` : selectedCategory || 'Todos los productos'}
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/50">
+          Elegí qué buscás y el modelo de tu moto. Te mostramos solamente las opciones que sirven para vos.
         </p>
       </div>
-      <div className="mb-6 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="font-brand break-words text-lg font-bold uppercase tracking-wider text-primary sm:text-xl sm:tracking-widest">
-          {selectedCategory || 'Todos los productos'}
-        </h2>
+
+      <div className="mb-6 flex items-center justify-between gap-4 border-y border-white/10 py-4">
+        <p className="text-sm text-white/50">
+          <span className="font-black text-white">{products.length}</span> {products.length === 1 ? 'producto' : 'productos'}
+        </p>
         <button
-          onClick={() => setShowFiltros(!showFiltros)}
-          className="flex min-h-11 items-center justify-center space-x-2 rounded-lg border border-primary/40 bg-black/60 px-4 py-2 text-white md:hidden"
+          onClick={() => setShowFilters((show) => !show)}
+          className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 px-5 py-2 text-sm font-black text-white md:hidden"
         >
           <Filter className="h-5 w-5" />
-          <span>Filtros</span>
+          {showFilters ? 'Cerrar filtros' : 'Filtrar'}
+          {activeFilterCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-black">{activeFilterCount}</span>}
         </button>
       </div>
-      
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Filtros Sidebar */}
-        <aside className={`md:w-1/4 ${showFiltros ? 'block' : 'hidden md:block'} transition-all duration-300`}>
-          <div className="sticky top-4 rounded-lg border border-primary/30 bg-black/60 p-4 shadow-md backdrop-blur-sm sm:p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white uppercase tracking-wider">
-                Filtros
+
+      <div className="flex flex-col gap-8 md:flex-row">
+        <aside className={`md:w-[280px] md:shrink-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
+          <div className="sticky top-40 rounded-2xl border border-white/10 bg-[#101010] p-5 sm:p-6">
+            <div className="mb-7 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-white">
+                <SlidersHorizontal className="h-4 w-4 text-primary" /> Encontrá tu repuesto
               </h2>
-              <button
-                onClick={resetFiltros}
-                className="text-sm text-primary hover:underline"
-              >
-                Reiniciar
+              <button onClick={resetFilters} className="flex items-center gap-1 text-xs font-bold text-white/45 hover:text-primary">
+                <X className="h-3.5 w-3.5" /> Limpiar
               </button>
             </div>
-            
-            {/* Categorias */}
-            <div className="mb-6">
-              <h3 className="font-brand text-lg font-medium text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] mb-3">
-                Categorias
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id="all-categories"
-                    name="category"
-                    checked={selectedCategory === ''}
-                    onChange={() => setSelectedCategory('')}
-                    className="h-4 w-4 text-primary accent-primary"
-                  />
-                  <label
-                    htmlFor="all-categories"
-                    className="font-brand ml-2 text-gray-200"
-                  >
-                    Todas las categorias
-                  </label>
-                </div>
-                {categories.map((category) => (
-                  <div key={category} className="flex items-center">
-                    <input
-                      type="radio"
-                      id={category}
-                      name="category"
-                      checked={selectedCategory === category}
-                      onChange={() => setSelectedCategory(category)}
-                      className="h-4 w-4 text-primary accent-primary"
-                    />
-                    <label
-                      htmlFor={category}
-                      className="font-brand ml-2 text-gray-200"
-                    >
-                      {category}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Modelo de moto */}
-            <div className="mb-6">
-              <h3 className="font-brand text-lg font-medium text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] mb-3">
-                Modelo de moto
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id="all-models"
-                    name="model"
-                    checked={selectedModel === ''}
-                    onChange={() => setSelectedModel('')}
-                    className="h-4 w-4 text-primary accent-primary"
-                  />
-                  <label htmlFor="all-models" className="font-brand ml-2 text-gray-200">
-                    Todos los modelos
-                  </label>
-                </div>
-                {motoModels.map((model) => (
-                  <div key={model} className="flex items-center">
-                    <input
-                      type="radio"
-                      id={`model-${model}`}
-                      name="model"
-                      checked={selectedModel === model}
-                      onChange={() => setSelectedModel(model)}
-                      className="h-4 w-4 text-primary accent-primary"
-                    />
-                    <label htmlFor={`model-${model}`} className="font-brand ml-2 text-gray-200">
-                      {model}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Rango de precio */}
-            <div className="mb-6">
-              <h3 className="font-brand text-lg font-medium text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] mb-3">
-                Rango de precio
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-200">{formatARS(priceRange[0])}</span>
-                  <span className="text-gray-200">{formatARS(priceRange[1])}</span>
-                </div>
+            <div className="space-y-6">
+              <SelectField id="category-filter" label="Qué estás buscando" value={selectedCategory} onChange={setSelectedCategory}>
+                <option value="">Todas las categorías</option>
+                {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </SelectField>
+
+              <SelectField id="model-filter" label="Modelo de moto" value={selectedModel} onChange={setSelectedModel} highlighted>
+                <option value="">Todos los modelos</option>
+                {motoModels.map((model) => <option key={model} value={model}>{model}</option>)}
+              </SelectField>
+
+              <div>
+                <label htmlFor="price-filter" className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-white/65">Hasta qué precio</label>
+                <p className="mb-3 text-xl font-black text-white">{formatARS(priceRange[1])}</p>
                 <input
+                  id="price-filter"
                   type="range"
                   min="0"
                   max={maxPrice}
                   value={priceRange[1]}
-                  onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                  onChange={(event) => setPriceRange([0, Number(event.target.value)])}
                   className="w-full accent-primary"
                 />
               </div>
-            </div>
-            
-            {/* Ordenar por */}
-            <div>
-              <h3 className="font-brand text-lg font-medium text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] mb-3">
-                Ordenar por
-              </h3>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full p-2 border border-primary/40 rounded-md bg-black/60 text-white focus:border-primary focus:ring-primary"
-              >
-                <option value="">Tendencias</option>
-                <option value="price-asc">Precio: menor a mayor</option>
-                <option value="price-desc">Precio: mayor a menor</option>
-                <option value="newest">Mas recientes primero</option>
-              </select>
+
+              <SelectField id="sort-filter" label="Ordenar por" value={sortBy} onChange={setSortBy}>
+                <option value="">Recomendados</option>
+                <option value="price-asc">Menor precio</option>
+                <option value="price-desc">Mayor precio</option>
+                <option value="newest">Más recientes</option>
+              </SelectField>
             </div>
           </div>
         </aside>
-        
-        {/* Productos Grid */}
-        <div className="md:w-3/4">
-          {!isSupabaseConfigured ? (
-            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-900">
-              Agrega <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> en <code>.env</code> para cargar productos desde tu base.
-            </div>
-          ) : null}
+
+        <div className="min-w-0 flex-1">
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <div className="flex h-64 items-center justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-primary" />
             </div>
-          ) : visibleProducts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              {visibleProducts.map((product) => (
-                <div key={product.id} className="transform-gpu">
-                  <ProductCard
-                    product={product}
-                    onAddToCart={addItem}
-                    onQuickView={(product) => {
-                      setQuickViewProduct(product);
-                      setIsQuickViewOpen(true);
-                    }}
-                  />
-                </div>
+          ) : products.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={addItem}
+                  onQuickView={(selectedProduct) => {
+                    setQuickViewProduct(selectedProduct);
+                    setIsQuickViewOpen(true);
+                  }}
+                />
               ))}
             </div>
           ) : (
-            <div className="text-center py-10">
-              <p className="text-gray-200">No se encontraron productos.</p>
+            <div className="rounded-2xl border border-dashed border-white/15 px-6 py-16 text-center">
+              <p className="text-lg font-black text-white">No encontramos productos con esos filtros.</p>
+              <p className="mt-2 text-sm text-white/45">Probá eligiendo “Todos los modelos” o limpiando los filtros.</p>
+              <button onClick={resetFilters} className="mt-6 rounded-full bg-primary px-6 py-3 text-sm font-black text-black">Ver todos los productos</button>
             </div>
           )}
         </div>
       </div>
-      
-      {/* QuickView Modal */}
-      {isQuickViewOpen && quickViewProduct && (
-        <QuickView
-          product={quickViewProduct}
-          onClose={() => setIsQuickViewOpen(false)}
-        />
-      )}
+
+      {isQuickViewOpen && quickViewProduct && <QuickView product={quickViewProduct} onClose={() => setIsQuickViewOpen(false)} />}
     </div>
   );
 }
