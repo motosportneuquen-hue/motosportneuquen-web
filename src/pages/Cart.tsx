@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Truck } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Truck, Banknote, CreditCard, Landmark, WalletCards } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
@@ -44,6 +44,14 @@ function paymentLabel(method: PaymentMethod) {
       return method;
   }
 }
+
+const paymentOptions = [
+  { value: 'transferencia', label: 'Transferencia', hint: 'Transferencia bancaria', icon: Landmark },
+  { value: 'efectivo', label: 'Efectivo', hint: 'A coordinar con el local', icon: Banknote },
+  { value: 'mercado_pago', label: 'Mercado Pago', hint: 'Desde tu cuenta de Mercado Pago', icon: WalletCards },
+  { value: 'tarjeta_credito', label: 'Crédito', hint: 'Todas las tarjetas de crédito', icon: CreditCard },
+  { value: 'tarjeta_debito', label: 'Débito', hint: 'Todas las tarjetas de débito', icon: CreditCard },
+] as const;
 
 export default function Cart() {
   const cartItems = useCartStore((state) => state.items);
@@ -257,8 +265,8 @@ export default function Cart() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-          <div className="space-y-4 lg:col-span-2">
+        <div className="mx-auto max-w-5xl space-y-8">
+          <div className="space-y-4">
             {cartItems.map((item) => (
               <div
                 key={item.id}
@@ -305,7 +313,7 @@ export default function Cart() {
             </div>
           </div>
 
-          <div className="bg-black/55 backdrop-blur-sm p-6 rounded-lg border border-primary/30 h-fit">
+          <div className="rounded-xl border border-primary/30 bg-black/55 p-4 backdrop-blur-sm sm:p-6 lg:p-8">
             <h2 className="text-xl font-semibold text-white mb-4">Resumen del pedido</h2>
             {checkoutMessage ? (
               <div className="mb-4 rounded-lg border border-purple-800/70 bg-purple-950/30 p-3 text-sm text-purple-100">
@@ -316,7 +324,7 @@ export default function Cart() {
             <div className="mb-5 rounded-lg border border-white/15 bg-white/[0.03] p-4">
               <h3 className="font-bold text-white">Datos del comprador</h3>
               <p className="mt-1 text-xs leading-relaxed text-gray-400">Se guardan con el pedido para que el local pueda contactarte.</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
                   ['name', 'Nombre y apellido', 'Ej: Juan Pérez', 'text'],
                   ['phone', 'Celular', 'Ej: 299 5343094', 'tel'],
@@ -342,7 +350,7 @@ export default function Cart() {
                     />
                   </label>
                 ))}
-                <label className="block text-xs font-semibold text-gray-300">
+                <label className="block text-xs font-semibold text-gray-300 sm:col-span-2">
                   Observaciones (opcional)
                   <textarea
                     value={buyer.notes}
@@ -431,24 +439,41 @@ export default function Cart() {
               {shippingMessage ? <p className="mt-3 text-xs text-amber-300">{shippingMessage}</p> : null}
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="payment-method" className="block text-sm text-gray-300 mb-2">
-                Forma de pago
-              </label>
-              <select
-                id="payment-method"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full p-2 border border-white/30 rounded-md bg-black/60 text-white focus:border-white focus:ring-white"
-              >
-                <option value="transferencia">Transferencia</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="mercado_pago">Mercado Pago</option>
-                <option value="tarjeta_credito">Tarjeta de crédito</option>
-                <option value="tarjeta_debito">Tarjeta de débito</option>
-              </select>
+            <fieldset className="mb-5">
+              <legend className="mb-3 text-sm font-bold text-white">Elegí cómo querés pagar</legend>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {paymentOptions.map(({ value, label, hint, icon: Icon }) => {
+                  const selected = paymentMethod === value;
+                  return (
+                    <label
+                      key={value}
+                      className={`flex min-h-24 cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
+                        selected
+                          ? 'border-primary bg-primary/[0.09] shadow-[0_0_0_1px_rgba(85,230,0,0.22)]'
+                          : 'border-white/10 bg-white/[0.025] hover:border-white/25'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment-method"
+                        value={value}
+                        checked={selected}
+                        onChange={() => setPaymentMethod(value)}
+                        className="sr-only"
+                      />
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-primary text-black' : 'bg-white/[0.06] text-white/55'}`}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span>
+                        <span className="block font-black text-white">{label}</span>
+                        <span className="mt-0.5 block text-xs leading-snug text-white/40">{hint}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
               <p className="mt-2 text-xs text-gray-400">El pago se coordina por WhatsApp. La web no solicita ni almacena datos de la tarjeta.</p>
-            </div>
+            </fieldset>
 
             <button
               onClick={checkoutByWhatsApp}
