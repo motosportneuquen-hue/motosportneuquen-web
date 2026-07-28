@@ -98,6 +98,12 @@ type AdminOrder = {
   source?: string | null;
   customer_name?: string | null;
   customer_phone?: string | null;
+  customer_email?: string | null;
+  customer_address?: string | null;
+  customer_locality?: string | null;
+  customer_province?: string | null;
+  customer_postal_code?: string | null;
+  customer_notes?: string | null;
   shipping_provider?: string | null;
   shipping_service?: string | null;
   tracking_number?: string | null;
@@ -1150,7 +1156,21 @@ export default function CustomPanel() {
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/55">
                     <span>{order.customer_name || 'Cliente sin nombre'}</span>
                     <span>{order.customer_phone || 'Teléfono por WhatsApp'}</span>
+                    {order.customer_email ? <span>{order.customer_email}</span> : null}
                     <span>{order.payment_method || 'Pago a coordinar'}</span>
+                  </div>
+                  <div className="mt-4 grid gap-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-4 text-sm sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-primary">Dirección de entrega</p>
+                      <p className="mt-1 text-white/75">
+                        {[order.customer_address, order.customer_locality, order.customer_province].filter(Boolean).join(', ') || 'Sin dirección cargada'}
+                        {order.customer_postal_code ? ` · CP ${order.customer_postal_code}` : ''}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-primary">Observaciones del cliente</p>
+                      <p className="mt-1 whitespace-pre-wrap text-white/75">{order.customer_notes || 'Sin observaciones'}</p>
+                    </div>
                   </div>
                   <div className="mt-4 divide-y divide-white/[0.06] rounded-lg border border-white/[0.08] bg-black/30">
                     {(order.order_items || []).map((item) => (

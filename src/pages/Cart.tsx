@@ -6,6 +6,16 @@ import { formatARS } from '../lib/currency';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type PaymentMethod = 'efectivo' | 'transferencia';
+type BuyerData = {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  locality: string;
+  province: string;
+  postalCode: string;
+  notes: string;
+};
 type ShippingQuote = {
   id: string;
   provider: string;
@@ -43,6 +53,16 @@ export default function Cart() {
   const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null);
   const [shippingMessage, setShippingMessage] = useState('');
   const [quotingShipping, setQuotingShipping] = useState(false);
+  const [buyer, setBuyer] = useState<BuyerData>({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    locality: '',
+    province: '',
+    postalCode: '',
+    notes: '',
+  });
 
   const handleQuantityChange = (cartItemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -117,8 +137,30 @@ export default function Cart() {
   const checkoutByWhatsApp = async () => {
     if (cartItems.length === 0) return;
 
-    setSubmitting(true);
     setCheckoutMessage('');
+    const requiredBuyerFields = [
+      buyer.name,
+      buyer.phone,
+      buyer.email,
+      buyer.address,
+      buyer.locality,
+      buyer.province,
+      buyer.postalCode,
+    ];
+    if (requiredBuyerFields.some((value) => !value.trim())) {
+      setCheckoutMessage('Completá todos los datos obligatorios del comprador.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email.trim())) {
+      setCheckoutMessage('Ingresá un email válido.');
+      return;
+    }
+    if (buyer.phone.replace(/\D/g, '').length < 8) {
+      setCheckoutMessage('Ingresá un celular válido, con código de área.');
+      return;
+    }
+
+    setSubmitting(true);
 
     if (isSupabaseConfigured && !hasDemoItems) {
       const orderItems = cartItems.map((item) => ({
@@ -131,6 +173,14 @@ export default function Cart() {
         items: orderItems,
         payment_method: paymentMethod,
         order_source: 'web',
+        buyer_name: buyer.name.trim(),
+        buyer_phone: buyer.phone.trim(),
+        buyer_email: buyer.email.trim().toLowerCase(),
+        buyer_address: buyer.address.trim(),
+        buyer_locality: buyer.locality.trim(),
+        buyer_province: buyer.province.trim(),
+        buyer_postal_code: buyer.postalCode.trim().toUpperCase(),
+        buyer_notes: buyer.notes.trim(),
       });
 
       if (error) {
@@ -150,6 +200,8 @@ export default function Cart() {
         `Hola MotoSport Neuquén, ya hice el pedido ${orderId} desde la web.\n\n` +
         `${lines.join('\n')}\n\n` +
         `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
+        `Cliente: ${buyer.name.trim()} · ${buyer.phone.trim()}\n` +
+        `Entrega: ${buyer.address.trim()}, ${buyer.locality.trim()}, ${buyer.province.trim()} (${buyer.postalCode.trim().toUpperCase()})\n` +
         `${selectedShipping ? `Envío: ${selectedShipping.provider} - ${selectedShipping.service} (${selectedShipping.deliveryType}) - ${formatARS(Math.round(selectedShipping.price))}\n` : 'Envío: a coordinar\n'}` +
         `Total: ${formatOrderTotal()}\n\n` +
         `Quedo atento/a para coordinar.`;
@@ -171,6 +223,9 @@ export default function Cart() {
       `Hola MotoSport Neuquén, quiero comprar estos productos:\n\n` +
       `${lines.join('\n')}\n\n` +
       `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
+      `Cliente: ${buyer.name.trim()} · ${buyer.phone.trim()} · ${buyer.email.trim()}\n` +
+      `Entrega: ${buyer.address.trim()}, ${buyer.locality.trim()}, ${buyer.province.trim()} (${buyer.postalCode.trim().toUpperCase()})\n` +
+      `${buyer.notes.trim() ? `Observaciones: ${buyer.notes.trim()}\n` : ''}` +
       `${selectedShipping ? `Envío: ${selectedShipping.provider} - ${selectedShipping.service} (${selectedShipping.deliveryType}) - ${formatARS(Math.round(selectedShipping.price))}\n` : 'Envío: a coordinar\n'}` +
       `Total: ${formatOrderTotal()}\n\n` +
       `Quedo atento/a para coordinar.`;
@@ -251,6 +306,48 @@ export default function Cart() {
                 {checkoutMessage}
               </div>
             ) : null}
+
+            <div className="mb-5 rounded-lg border border-white/15 bg-white/[0.03] p-4">
+              <h3 className="font-bold text-white">Datos del comprador</h3>
+              <p className="mt-1 text-xs leading-relaxed text-gray-400">Se guardan con el pedido para que el local pueda contactarte.</p>
+              <div className="mt-4 space-y-3">
+                {[
+                  ['name', 'Nombre y apellido', 'Ej: Juan Pérez', 'text'],
+                  ['phone', 'Celular', 'Ej: 299 5343094', 'tel'],
+                  ['email', 'Email', 'Ej: juan@email.com', 'email'],
+                  ['address', 'Dirección', 'Calle y número', 'text'],
+                  ['locality', 'Localidad', 'Ej: Neuquén', 'text'],
+                  ['province', 'Provincia', 'Ej: Neuquén', 'text'],
+                  ['postalCode', 'Código postal', 'Ej: 8300', 'text'],
+                ].map(([key, label, placeholder, type]) => (
+                  <label key={key} className="block text-xs font-semibold text-gray-300">
+                    {label} *
+                    <input
+                      type={type}
+                      required
+                      value={buyer[key as keyof BuyerData]}
+                      onChange={(event) => {
+                        const value = key === 'postalCode' ? event.target.value.toUpperCase() : event.target.value;
+                        setBuyer((current) => ({ ...current, [key]: value }));
+                        if (key === 'postalCode') setPostalCode(value);
+                      }}
+                      placeholder={placeholder}
+                      className="mt-1.5 min-h-11 w-full rounded-md border border-white/20 bg-black/60 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-primary"
+                    />
+                  </label>
+                ))}
+                <label className="block text-xs font-semibold text-gray-300">
+                  Observaciones (opcional)
+                  <textarea
+                    value={buyer.notes}
+                    onChange={(event) => setBuyer((current) => ({ ...current, notes: event.target.value }))}
+                    placeholder="Indicaciones para el pedido o la entrega"
+                    rows={3}
+                    className="mt-1.5 w-full resize-none rounded-md border border-white/20 bg-black/60 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-primary"
+                  />
+                </label>
+              </div>
+            </div>
             <div className="space-y-2 mb-4">
               <div className="flex justify-between gap-4 text-gray-300">
                 <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
@@ -278,7 +375,11 @@ export default function Cart() {
                 <input
                   id="postal-code"
                   value={postalCode}
-                  onChange={(event) => setPostalCode(event.target.value.toUpperCase())}
+                  onChange={(event) => {
+                    const value = event.target.value.toUpperCase();
+                    setPostalCode(value);
+                    setBuyer((current) => ({ ...current, postalCode: value }));
+                  }}
                   placeholder="Ej: 8300"
                   maxLength={8}
                   className="min-w-0 flex-1 rounded-md border border-white/25 bg-black/60 px-3 py-2 text-white outline-none focus:border-primary"
