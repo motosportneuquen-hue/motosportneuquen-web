@@ -146,16 +146,6 @@ type CouponForm = {
   active: boolean;
 };
 
-type BulkProductRow = {
-  name: string;
-  category?: string;
-  price?: number;
-  stock?: number;
-  motorcycle_model?: string;
-  colors?: string[];
-  image_url?: string;
-};
-
 type ProductImageInput = {
   image_url: string;
   color: string | null;
@@ -292,83 +282,6 @@ function normalizeMatch(value: string) {
     .replace(/\s+/g, ' ');
 }
 
-function parseMoney(value: string) {
-  const cleanValue = value
-    .replace(/[^\d.,-]/g, '')
-    .replace(/\.(?=\d{3}(\D|$))/g, '')
-    .replace(',', '.');
-  const parsed = Number(cleanValue);
-  return Number.isFinite(parsed) ? Math.round(parsed) : undefined;
-}
-
-function parseBulkCatalog(text: string): BulkProductRow[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim().replace(/^[-*•]\s*/, ''))
-    .filter(Boolean)
-    .map((line) => {
-      const parts = line.split(/\s+-\s+|[|;\t]/).map((part) => part.trim()).filter(Boolean);
-
-      if (parts.length >= 3) {
-        return {
-          name: parts[0],
-          category: parts[1],
-          price: parseMoney(parts[2]),
-          stock: parts[3] ? Number(parts[3].replace(/\D/g, '')) : undefined,
-          colors: parts[4] ? splitList(parts[4]) : undefined,
-          image_url: parts[5],
-        };
-      }
-
-      const name = line
-        .replace(/\b(categoria|cat|modelo|moto|precio|stock|colores?|color|imagen|foto|url)\s*[:=]\s*[^|;]+/gi, '')
-        .replace(/\$\s*[\d.,]+/g, '')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-      const category = line.match(/\b(?:categoria|cat)\s*[:=]\s*([^|;]+)/i)?.[1]?.trim();
-      const motorcycleModel = line.match(/\b(?:modelo|moto)\s*[:=]\s*([^|;]+)/i)?.[1]?.trim();
-      const price = parseMoney(line.match(/(?:\$|precio\s*[:=]\s*)([\d.,]+)/i)?.[1] || '');
-      const stockMatch = line.match(/\bstock\s*[:=]?\s*(\d+)/i);
-      const colors = line.match(/\bcolores?\s*[:=]\s*([^|;]+)/i)?.[1];
-      const imageUrl = line.match(/\b(?:imagen|foto|url)\s*[:=]\s*(https?:\/\/\S+|\/\S+)/i)?.[1];
-
-      return {
-        name,
-        category,
-        motorcycle_model: motorcycleModel,
-        price,
-        stock: stockMatch ? Number(stockMatch[1]) : undefined,
-        colors: colors ? splitList(colors) : undefined,
-        image_url: imageUrl,
-      };
-    })
-    .filter((row) => row.name);
-}
-
-function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Product>) {
-  const normalizedName = normalizeMatch(row.name);
-  const exactMatch = productsByName.get(normalizedName);
-
-  if (exactMatch) {
-    return exactMatch;
-  }
-
-  const compactName = normalizedName.replace(/\s/g, '');
-  for (const [productName, product] of productsByName) {
-    const compactProductName = productName.replace(/\s/g, '');
-
-    if (
-      compactProductName === compactName ||
-      compactProductName.includes(compactName) ||
-      compactName.includes(compactProductName)
-    ) {
-      return product;
-    }
-  }
-
-  return undefined;
-}
-
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'customers' | 'coupons' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
@@ -394,7 +307,6 @@ export default function CustomPanel() {
   const [debtorForm, setDebtorForm] = useState<DebtorForm>(emptyDebtor);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [bulkText, setBulkText] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [message, setMessage] = useState('');
@@ -609,73 +521,6 @@ export default function CustomPanel() {
     setMessage('Producto guardado correctamente.');
     setSaving(false);
     await loadData();
-  };
-
-  const applyBulkCatalog = async () => {
-    const rows = parseBulkCatalog(bulkText);
-
-    if (rows.length === 0) {
-      setMessage('Pega al menos una linea para actualizar.');
-      return;
-    }
-
-    setSaving(true);
-    setMessage('');
-
-    let updated = 0;
-    let created = 0;
-    const errors: string[] = [];
-    const productsByName = new Map(products.map((product) => [normalizeMatch(product.name), product]));
-
-    for (const row of rows) {
-      const currentProduct = findMatchingProduct(row, productsByName);
-      const payload = {
-        name: currentProduct?.name || row.name.trim(),
-        description: currentProduct?.description || 'Producto cargado desde actualizacion rapida.',
-        price: row.price ?? currentProduct?.price ?? 0,
-        stock: row.stock ?? currentProduct?.stock ?? 0,
-        category: row.category || currentProduct?.category || '',
-        motorcycle_model: row.motorcycle_model || currentProduct?.motorcycle_model || null,
-        image_url: row.image_url || currentProduct?.image_url || '/branding/speedy-logo.svg',
-        colors: row.colors && row.colors.length > 0 ? row.colors : currentProduct?.colors || ['Consultar'],
-      };
-
-      if (!payload.category) {
-        errors.push(`${row.name}: falta categoria para crearlo.`);
-        continue;
-      }
-
-      const request = currentProduct
-        ? supabase.from('products').update(payload).eq('id', currentProduct.id).select().single()
-        : supabase.from('products').insert(payload).select().single();
-
-      const { data, error } = await request;
-
-      if (error) {
-        errors.push(`${row.name}: ${error.message}`);
-        continue;
-      }
-
-      const savedProduct = data as Product;
-      productsByName.set(normalizeMatch(savedProduct.name), savedProduct);
-
-      if (currentProduct) {
-        updated += 1;
-      } else {
-        created += 1;
-      }
-    }
-
-    setSaving(false);
-    await loadData();
-
-    if (errors.length > 0) {
-      setMessage(`Actualizados: ${updated}. Creados: ${created}. Revisar: ${errors.join(' / ')}`);
-      return;
-    }
-
-    setBulkText('');
-    setMessage(`Listo. Actualizados: ${updated}. Creados: ${created}.`);
   };
 
   const editProduct = (product: Product) => {
@@ -1827,36 +1672,6 @@ export default function CustomPanel() {
                 />
                 <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
               </div>
-            </div>
-
-            <div className={`${panelClass} space-y-3`}>
-              <div>
-                <h2 className="text-xl font-bold text-white">Actualizacion rapida por texto</h2>
-                <p className="mt-1 text-sm text-gray-300">
-                  Pega una linea por producto. El sistema detecta por nombre si debe actualizar uno existente o crear uno nuevo.
-                </p>
-              </div>
-              <textarea
-                className={`${fieldClass} min-h-36 font-mono text-xs`}
-                value={bulkText}
-                onChange={(event) => setBulkText(event.target.value)}
-                placeholder={`Escape GRS - Estética y tuning - 250000 - 3 - rojo, negro\nKit transmisión CG - Transmisión - 148373 - 2\nFiltro XR precio=35000 stock=6 categoria=Repuestos modelo=Tornado / XR`}
-              />
-              <div className="rounded-md border border-green-400/80 bg-green-500/15 p-3 text-xs text-green-100 shadow-[0_0_22px_rgba(34,197,94,0.22)]">
-                <p className="font-black uppercase tracking-wide text-green-300">Formato recomendado:</p>
-                <p className="mt-1 text-base font-black text-white">Producto - Categoria - Precio - Stock - Colores</p>
-                <p className="font-semibold text-green-100">Colores separados con coma: negro, blanco, rojo</p>
-                <p className="mt-1 text-green-200">Ordena automatico por categoria y nombre. Para dejarlo como consulta: usa precio 0 o dejalo vacio.</p>
-              </div>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={applyBulkCatalog}
-                className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 font-bold text-black disabled:opacity-60"
-              >
-                <Save className="h-4 w-4" />
-                Actualizar catalogo
-              </button>
             </div>
 
             <div className={`${panelClass} overflow-x-auto`}>
