@@ -52,23 +52,23 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
       role="link"
       tabIndex={0}
       aria-label={`Ver detalle de ${product.name}`}
-      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101010] transition duration-300 hover:-translate-y-1 hover:border-white/25"
+      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#101010] transition duration-300 hover:-translate-y-0.5 hover:border-primary/30"
     >
       <div className="relative aspect-square overflow-hidden bg-[#f5f5f5]">
-        <img src={product.image_url} alt={product.name} className="h-full w-full object-contain p-6 transition duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
-        <span className="absolute left-4 top-4 rounded-full bg-black/85 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white">{product.category}</span>
-        {!isOnRequest && product.stock > 0 && product.stock <= 5 && <span className="absolute right-4 top-4 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_#55e600]" title={`Quedan ${product.stock}`} />}
+        <img src={product.image_url} alt={product.name} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
+        <span className="absolute left-3 top-3 rounded-full bg-black/85 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-white">{product.category}</span>
+        {!isOnRequest && product.stock > 0 && product.stock <= 5 && <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_#55e600]" title={`Quedan ${product.stock}`} />}
         {!isOnRequest && product.stock === 0 && <div className="absolute inset-0 flex items-center justify-center bg-black/55"><span className="rounded-full bg-white px-4 py-2 text-xs font-black uppercase text-black">Sin stock</span></div>}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="text-lg font-black leading-tight text-white">{product.name}</h3>
-          <ArrowUpRight className="h-5 w-5 shrink-0 text-white/25 transition group-hover:text-primary" />
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-base font-black leading-tight text-white">{product.name}</h3>
+          <ArrowUpRight className="h-4 w-4 shrink-0 text-white/25 transition group-hover:text-primary" />
         </div>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/45">{product.description}</p>
-        <div className="mt-auto flex items-end justify-between gap-3 pt-6">
-          <p className="text-2xl font-black text-white">{isOnRequest ? 'Consultar' : formatProductPrice(Math.round(product.price))}</p>
+        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+          <p className="text-xl font-black text-white">{isOnRequest ? 'Consultar' : formatProductPrice(Math.round(product.price))}</p>
           <button
             onClick={handleAddToCart}
             disabled={!isOnRequest && product.stock === 0}
