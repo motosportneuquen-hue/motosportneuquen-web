@@ -1,7 +1,7 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { BarChart3, Calculator, CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
+import { BarChart3, Calculator, CheckCircle, Download, Edit, Mail, MapPin, PackageCheck, Phone, RefreshCw, Save, Search, Trash2, Truck, Users } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
@@ -112,6 +112,20 @@ type AdminOrder = {
   admin_notes?: string | null;
   created_at: string;
   order_items?: AdminOrderItem[];
+};
+
+type AdminCustomer = {
+  key: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  locality: string;
+  province: string;
+  postalCode: string;
+  orderCount: number;
+  totalSpent: number;
+  lastOrderAt: string;
 };
 
 type BulkProductRow = {
@@ -326,7 +340,7 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'customers' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -349,6 +363,7 @@ export default function CustomPanel() {
   const [uploading, setUploading] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
   const [message, setMessage] = useState('');
 
   const isAdmin = Boolean(profile?.is_admin);
@@ -358,6 +373,47 @@ export default function CustomPanel() {
   }, [orders, products]);
 
   const profitability = useMemo(() => calculateProfitability(orders), [orders]);
+
+  const customers = useMemo(() => {
+    const grouped = new Map<string, AdminCustomer>();
+
+    orders.forEach((order) => {
+      const email = (order.customer_email || '').trim().toLowerCase();
+      const phone = (order.customer_phone || '').trim();
+      const phoneKey = phone.replace(/\D/g, '');
+      if (!email && !phoneKey) return;
+      const key = email || phoneKey;
+      const existing = grouped.get(key);
+      const isNewer = !existing || new Date(order.created_at).getTime() > new Date(existing.lastOrderAt).getTime();
+      const countsAsPurchase = order.status !== 'cancelled';
+
+      grouped.set(key, {
+        key,
+        name: isNewer ? order.customer_name || existing?.name || 'Cliente' : existing?.name || order.customer_name || 'Cliente',
+        phone: isNewer ? phone || existing?.phone || '' : existing?.phone || phone,
+        email: isNewer ? email || existing?.email || '' : existing?.email || email,
+        address: isNewer ? order.customer_address || existing?.address || '' : existing?.address || order.customer_address || '',
+        locality: isNewer ? order.customer_locality || existing?.locality || '' : existing?.locality || order.customer_locality || '',
+        province: isNewer ? order.customer_province || existing?.province || '' : existing?.province || order.customer_province || '',
+        postalCode: isNewer ? order.customer_postal_code || existing?.postalCode || '' : existing?.postalCode || order.customer_postal_code || '',
+        orderCount: (existing?.orderCount || 0) + (countsAsPurchase ? 1 : 0),
+        totalSpent: (existing?.totalSpent || 0) + (countsAsPurchase ? Number(order.total_price || 0) : 0),
+        lastOrderAt: isNewer ? order.created_at : existing?.lastOrderAt || order.created_at,
+      });
+    });
+
+    return [...grouped.values()]
+      .filter((customer) => customer.orderCount > 0)
+      .sort((a, b) => new Date(b.lastOrderAt).getTime() - new Date(a.lastOrderAt).getTime());
+  }, [orders]);
+
+  const filteredCustomers = useMemo(() => {
+    const search = normalizeMatch(customerSearch);
+    if (!search) return customers;
+    return customers.filter((customer) => normalizeMatch(
+      `${customer.name} ${customer.phone} ${customer.email} ${customer.address} ${customer.locality} ${customer.province}`
+    ).includes(search));
+  }, [customerSearch, customers]);
 
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
@@ -1025,6 +1081,7 @@ export default function CustomPanel() {
         {[
           ['metrics', 'Métricas'],
           ['costs', 'Costos y ganancias'],
+          ['customers', 'Clientes'],
           ['orders', 'Pedidos'],
           ['offers', 'Ofertas'],
           ['products', 'Productos'],
@@ -1116,6 +1173,83 @@ export default function CustomPanel() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === 'customers' ? (
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className={panelClass}><p className="text-xs font-black uppercase tracking-wider text-white/40">Clientes registrados</p><p className="mt-2 text-3xl font-black text-primary">{customers.length}</p></div>
+            <div className={panelClass}><p className="text-xs font-black uppercase tracking-wider text-white/40">Compraron más de una vez</p><p className="mt-2 text-3xl font-black text-primary">{customers.filter((customer) => customer.orderCount > 1).length}</p></div>
+            <div className={panelClass}><p className="text-xs font-black uppercase tracking-wider text-white/40">Total de pedidos</p><p className="mt-2 text-3xl font-black text-primary">{customers.reduce((sum, customer) => sum + customer.orderCount, 0)}</p></div>
+          </div>
+
+          <div className={panelClass}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-black text-white">Clientes que compraron</h2>
+                </div>
+                <p className="mt-1 text-sm text-white/40">Se agregan automáticamente al registrar un pedido.</p>
+              </div>
+              <label className="block w-full sm:max-w-sm">
+                <span className="sr-only">Buscar cliente</span>
+                <div className="relative">
+                  <input
+                    value={customerSearch}
+                    onChange={(event) => setCustomerSearch(event.target.value)}
+                    placeholder="Buscar por nombre, celular o email"
+                    className={`${fieldClass} pr-10`}
+                  />
+                  <Search className="absolute right-3 top-1/2 mt-0.5 h-4 w-4 -translate-y-1/2 text-white/35" />
+                </div>
+              </label>
+            </div>
+
+            {filteredCustomers.length ? (
+              <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                {filteredCustomers.map((customer) => {
+                  const phoneDigits = customer.phone.replace(/\D/g, '');
+                  const whatsappPhone = phoneDigits.startsWith('54') ? phoneDigits : `549${phoneDigits.replace(/^0/, '')}`;
+                  return (
+                    <article key={customer.key} className="rounded-xl border border-white/[0.08] bg-black/25 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-black text-white">{customer.name}</h3>
+                          <p className="mt-1 text-xs text-white/35">Última compra: {new Date(customer.lastOrderAt).toLocaleDateString('es-AR')}</p>
+                        </div>
+                        <div className="shrink-0 text-left sm:text-right">
+                          <p className="font-black text-primary">{formatARS(Math.round(customer.totalSpent))}</p>
+                          <p className="text-xs text-white/35">{customer.orderCount} {customer.orderCount === 1 ? 'pedido' : 'pedidos'}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-2 text-sm text-white/60">
+                        {customer.phone ? (
+                          <a href={`https://wa.me/${whatsappPhone}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-primary">
+                            <Phone className="h-4 w-4 text-primary" /> {customer.phone}
+                          </a>
+                        ) : null}
+                        {customer.email ? <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {customer.email}</p> : null}
+                        {customer.address || customer.locality ? (
+                          <p className="flex items-start gap-2">
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                            <span>{[customer.address, customer.locality, customer.province].filter(Boolean).join(', ')}{customer.postalCode ? ` · CP ${customer.postalCode}` : ''}</span>
+                          </p>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-xl border border-dashed border-white/10 py-12 text-center">
+                <Users className="mx-auto h-9 w-9 text-white/25" />
+                <p className="mt-3 font-bold text-white/55">{customers.length ? 'No encontramos clientes con esa búsqueda.' : 'Todavía no hay compradores registrados.'}</p>
+              </div>
+            )}
           </div>
         </div>
       ) : null}
