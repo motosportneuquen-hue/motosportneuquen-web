@@ -4,7 +4,9 @@ export type MetricsOrder = {
   created_at: string;
   order_items?: Array<{
     quantity: number;
-    products?: { name?: string } | null;
+    price?: number;
+    cost_price?: number | null;
+    products?: { name?: string; cost_price?: number | null } | null;
   }>;
 };
 
@@ -43,5 +45,34 @@ export function calculateOrderMetrics(
     averageTicket,
     monthlyOrders: monthlyOrders.length,
     topProducts: [...productSales.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5),
+  };
+}
+
+export function calculateProfitability(orders: MetricsOrder[]) {
+  let revenue = 0;
+  let cost = 0;
+  let itemsWithoutCost = 0;
+
+  orders
+    .filter((order) => order.status === 'delivered')
+    .forEach((order) => {
+      (order.order_items || []).forEach((item) => {
+        const quantity = Number(item.quantity || 0);
+        const salePrice = Number(item.price || 0);
+        const storedCost = item.cost_price ?? item.products?.cost_price;
+        if (storedCost == null) {
+          itemsWithoutCost += quantity;
+        } else {
+          revenue += salePrice * quantity;
+          cost += Number(storedCost) * quantity;
+        }
+      });
+    });
+
+  return {
+    revenue,
+    cost,
+    profit: revenue - cost,
+    itemsWithoutCost,
   };
 }

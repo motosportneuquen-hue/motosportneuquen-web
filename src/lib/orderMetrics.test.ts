@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { calculateOrderMetrics, MetricsOrder } from './orderMetrics';
+import { calculateOrderMetrics, calculateProfitability, MetricsOrder } from './orderMetrics';
 
 const orders: MetricsOrder[] = [
   {
     status: 'delivered',
     total_price: 100000,
     created_at: '2026-07-10T12:00:00.000Z',
-    order_items: [{ quantity: 2, products: { name: 'Escape' } }],
+    order_items: [{ quantity: 2, price: 50000, cost_price: 30000, products: { name: 'Escape' } }],
   },
   {
     status: 'pending',
@@ -41,5 +41,24 @@ describe('order metrics', () => {
       ['Escape', 2],
       ['Cubierta', 1],
     ]);
+  });
+
+  it('calculates delivered gross profit and reports missing optional costs', () => {
+    const result = calculateProfitability([
+      ...orders,
+      {
+        status: 'delivered',
+        total_price: 20000,
+        created_at: '2026-07-25T12:00:00.000Z',
+        order_items: [{ quantity: 1, price: 20000, products: { name: 'Sin costo' } }],
+      },
+    ]);
+
+    expect(result).toEqual({
+      revenue: 100000,
+      cost: 60000,
+      profit: 40000,
+      itemsWithoutCost: 1,
+    });
   });
 });

@@ -1,12 +1,12 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { BarChart3, CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
+import { BarChart3, Calculator, CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
 import { formatARS } from '../lib/currency';
-import { calculateOrderMetrics } from '../lib/orderMetrics';
+import { calculateOrderMetrics, calculateProfitability } from '../lib/orderMetrics';
 
 type ProductForm = {
   id?: string;
@@ -88,7 +88,8 @@ type AdminOrderItem = {
   id: string;
   quantity: number;
   price: number;
-  products?: { name?: string } | null;
+  cost_price?: number | null;
+  products?: { name?: string; cost_price?: number | null } | null;
 };
 
 type AdminOrder = {
@@ -325,7 +326,7 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'metrics' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -355,6 +356,8 @@ export default function CustomPanel() {
   const stats = useMemo(() => {
     return calculateOrderMetrics(orders, products.map((product) => Number(product.stock || 0)));
   }, [orders, products]);
+
+  const profitability = useMemo(() => calculateProfitability(orders), [orders]);
 
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
@@ -423,7 +426,7 @@ export default function CustomPanel() {
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('product_images').select('*').order('display_order', { ascending: true }),
       supabase.from('debtors').select('*').order('created_at', { ascending: false }),
-      supabase.from('orders').select('*, order_items(id, quantity, price, products(name))').order('created_at', { ascending: false }),
+      supabase.from('orders').select('*, order_items(id, quantity, price, cost_price, products(name, cost_price))').order('created_at', { ascending: false }),
       supabase.from('motorcycle_models').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
       supabase.from('offers').select('*, products(*)').order('orden', { ascending: true }).order('created_at', { ascending: false }),
     ]);
@@ -842,6 +845,20 @@ export default function CustomPanel() {
     if (!error) await loadData();
   };
 
+  const updateProductCost = async (productId: string, value: string) => {
+    const normalized = value.trim();
+    const cost = normalized === '' ? null : Number(normalized);
+    if (cost !== null && (!Number.isFinite(cost) || cost < 0)) {
+      setMessage('El costo debe ser un número mayor o igual a cero.');
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from('products').update({ cost_price: cost }).eq('id', productId);
+    setMessage(error ? `No se pudo guardar el costo: ${error.message}` : 'Costo actualizado correctamente.');
+    setSaving(false);
+    if (!error) await loadData();
+  };
+
   const createMotorcycleModel = async (event: FormEvent) => {
     event.preventDefault();
     const name = modelName.trim();
@@ -1007,6 +1024,7 @@ export default function CustomPanel() {
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#101010] p-1.5">
         {[
           ['metrics', 'Métricas'],
+          ['costs', 'Costos y ganancias'],
           ['orders', 'Pedidos'],
           ['offers', 'Ofertas'],
           ['products', 'Productos'],
@@ -1022,6 +1040,85 @@ export default function CustomPanel() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'costs' ? (
+        <div className="space-y-5">
+          <div className="rounded-xl border border-primary/20 bg-primary/[0.045] p-4 text-sm text-white/65">
+            <b className="text-white">Uso opcional.</b> Podés dejar cualquier costo vacío. Esto no afecta el catálogo, el stock ni las compras.
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              ['Ventas analizadas', formatARS(Math.round(profitability.revenue)), 'Pedidos entregados'],
+              ['Costo estimado', formatARS(Math.round(profitability.cost)), 'Según costos cargados'],
+              ['Ganancia bruta', formatARS(Math.round(profitability.profit)), 'Venta menos costo'],
+              ['Sin costo', String(profitability.itemsWithoutCost), 'Productos vendidos sin costo cargado'],
+            ].map(([label, value, hint]) => (
+              <div key={label} className={panelClass}>
+                <p className="text-[11px] font-black uppercase tracking-wider text-white/40">{label}</p>
+                <p className="mt-2 break-words text-2xl font-black text-primary">{value}</p>
+                <p className="mt-1 text-xs text-white/35">{hint}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className={panelClass}>
+            <div className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
+              <div>
+                <h2 className="text-xl font-black text-white">Costo por producto</h2>
+                <p className="mt-1 text-sm text-white/40">El margen se calcula sobre el precio actual de venta.</p>
+              </div>
+            </div>
+            <div className="mt-5 divide-y divide-white/[0.07]">
+              {sortedProducts.map((product) => {
+                const cost = product.cost_price == null ? null : Number(product.cost_price);
+                const margin = cost == null ? null : Number(product.price || 0) - cost;
+                const marginPercent = margin != null && product.price > 0 ? (margin / product.price) * 100 : null;
+                return (
+                  <form
+                    key={product.id}
+                    className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_150px_150px_150px_auto] md:items-end"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const form = new FormData(event.currentTarget);
+                      updateProductCost(product.id, String(form.get('cost_price') || ''));
+                    }}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-white">{product.name}</p>
+                      <p className="text-xs text-white/35">{product.category}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-white/35">Precio de venta</p>
+                      <p className="mt-2 min-h-11 rounded-lg border border-white/[0.06] bg-black/30 px-3 py-3 text-sm font-bold text-white">{formatARS(Math.round(product.price || 0))}</p>
+                    </div>
+                    <label className={labelClass}>
+                      Costo opcional
+                      <input
+                        name="cost_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        defaultValue={cost ?? ''}
+                        placeholder="Sin cargar"
+                        className={fieldClass}
+                      />
+                    </label>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-white/35">Margen estimado</p>
+                      <p className={`mt-2 min-h-11 rounded-lg border border-white/[0.06] bg-black/30 px-3 py-3 text-sm font-bold ${margin == null ? 'text-white/30' : margin >= 0 ? 'text-primary' : 'text-red-300'}`}>
+                        {margin == null ? 'Sin calcular' : `${formatARS(Math.round(margin))}${marginPercent != null ? ` · ${marginPercent.toFixed(1)}%` : ''}`}
+                      </p>
+                    </div>
+                    <button disabled={saving} className="min-h-11 rounded-lg bg-primary px-4 font-black text-black disabled:opacity-50">Guardar</button>
+                  </form>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {activeTab === 'metrics' ? (
         <div className="space-y-5">
