@@ -242,7 +242,6 @@ DECLARE
   quantity_requested integer;
   current_price numeric(12, 2);
   total_amount numeric(12, 2) := 0;
-  pending_price boolean := false;
   safe_payment text;
 BEGIN
   IF items IS NULL OR jsonb_typeof(items) <> 'array' OR jsonb_array_length(items) = 0 THEN
@@ -263,12 +262,11 @@ BEGIN
     IF current_product.stock < grouped.quantity THEN
       RAISE EXCEPTION 'Stock insuficiente para %', current_product.name;
     END IF;
-    pending_price := pending_price OR current_product.price <= 0;
     total_amount := total_amount + current_product.price * grouped.quantity;
   END LOOP;
 
   INSERT INTO public.orders (user_id, total_price, status, payment_method, source)
-  VALUES (auth.uid(), total_amount, CASE WHEN pending_price THEN 'pending' ELSE 'completed' END, safe_payment, COALESCE(NULLIF(order_source, ''), 'web'))
+  VALUES (auth.uid(), total_amount, 'pending', safe_payment, COALESCE(NULLIF(order_source, ''), 'web'))
   RETURNING id INTO new_order_id;
 
   FOR item IN SELECT * FROM jsonb_array_elements(items) LOOP
