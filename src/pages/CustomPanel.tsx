@@ -71,6 +71,14 @@ type AdminDebtor = {
   created_at: string;
 };
 
+type AdminMotorcycleModel = {
+  id: string;
+  name: string;
+  activo: boolean;
+  orden: number;
+  created_at: string;
+};
+
 type AdminOrderItem = {
   id: string;
   quantity: number;
@@ -155,7 +163,7 @@ const fieldClass = 'mt-1.5 min-h-11 w-full rounded-lg border border-white/10 bg-
 const labelClass = 'block text-xs font-bold uppercase tracking-[0.08em] text-white/60';
 const panelClass = 'rounded-xl border border-white/[0.08] bg-[#111] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.16)]';
 const sharedBrandImage = '/branding/motosport-neuquen-logo.png';
-const motorcycleModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
+const defaultMotorcycleModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
 const orderStatuses = [
   ['pending', 'Pendiente'],
   ['confirmed', 'Confirmado'],
@@ -295,12 +303,14 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'testimonials' | 'debtors' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'models' | 'testimonials' | 'debtors' | 'orders'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [debtors, setDebtors] = useState<AdminDebtor[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [motorcycleModels, setMotorcycleModels] = useState<AdminMotorcycleModel[]>([]);
+  const [modelName, setModelName] = useState('');
   const [productImages, setProductImages] = useState<Record<string, ProductImage[]>>({});
   const [productForm, setProductForm] = useState<ProductForm>(emptyProduct);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(emptyCategory);
@@ -355,6 +365,11 @@ export default function CustomPanel() {
     });
   }, [categories]);
 
+  const availableMotorcycleModels = useMemo(
+    () => motorcycleModels.length > 0 ? motorcycleModels.map((model) => model.name) : defaultMotorcycleModels,
+    [motorcycleModels]
+  );
+
   const sortedTestimonials = useMemo(() => {
     return [...testimonials].sort((a, b) => {
       const orderCompare = Number(a.orden || 0) - Number(b.orden || 0);
@@ -366,13 +381,14 @@ export default function CustomPanel() {
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
 
-    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }] = await Promise.all([
+    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('product_images').select('*').order('display_order', { ascending: true }),
       supabase.from('debtors').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*, order_items(id, quantity, price, products(name))').order('created_at', { ascending: false }),
+      supabase.from('motorcycle_models').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
     ]);
 
     setProducts((productData || []) as Product[]);
@@ -380,6 +396,7 @@ export default function CustomPanel() {
     setTestimonials((testimonialsData || []) as Testimonial[]);
     setDebtors((debtorsData || []) as AdminDebtor[]);
     setOrders((ordersData || []) as AdminOrder[]);
+    setMotorcycleModels((modelsData || []) as AdminMotorcycleModel[]);
 
     const groupedImages = ((imagesData || []) as ProductImage[]).reduce<Record<string, ProductImage[]>>((acc, image) => {
       acc[image.product_id] = [...(acc[image.product_id] || []), image];
@@ -787,6 +804,34 @@ export default function CustomPanel() {
     if (!error) await loadData();
   };
 
+  const createMotorcycleModel = async (event: FormEvent) => {
+    event.preventDefault();
+    const name = modelName.trim();
+    if (!name) return;
+    setSaving(true);
+    const nextOrder = motorcycleModels.reduce((max, model) => Math.max(max, Number(model.orden || 0)), 0) + 1;
+    const { error } = await supabase.from('motorcycle_models').insert({ name, activo: true, orden: nextOrder });
+    setMessage(error ? `No se pudo crear el modelo: ${error.message}` : 'Modelo agregado correctamente.');
+    if (!error) setModelName('');
+    setSaving(false);
+    await loadData();
+  };
+
+  const updateMotorcycleModel = async (modelId: string, changes: Partial<Pick<AdminMotorcycleModel, 'name' | 'activo' | 'orden'>>) => {
+    setSaving(true);
+    const { error } = await supabase.from('motorcycle_models').update(changes).eq('id', modelId);
+    setMessage(error ? `No se pudo actualizar el modelo: ${error.message}` : 'Modelo actualizado correctamente.');
+    setSaving(false);
+    if (!error) await loadData();
+  };
+
+  const deleteMotorcycleModel = async (modelId: string) => {
+    if (!confirm('¿Seguro que querés borrar este modelo? Los productos existentes conservarán el texto del modelo.')) return;
+    const { error } = await supabase.from('motorcycle_models').delete().eq('id', modelId);
+    setMessage(error ? `No se pudo borrar el modelo: ${error.message}` : 'Modelo eliminado.');
+    if (!error) await loadData();
+  };
+
   const exportDebtorsCsv = () => {
     const rows = debtors.map((debtor) => ({
       estado: debtor.status === 'paid' || debtor.paid_at ? 'Pagado' : 'Pendiente',
@@ -884,6 +929,7 @@ export default function CustomPanel() {
           ['orders', 'Pedidos'],
           ['products', 'Productos'],
           ['categories', 'Categorias'],
+          ['models', 'Modelos de moto'],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -1009,7 +1055,7 @@ export default function CustomPanel() {
                 Modelo de moto
                 <select className={fieldClass} value={productForm.motorcycle_model} onChange={(e) => setProductForm({ ...productForm, motorcycle_model: e.target.value })}>
                   <option value="">Sin modelo</option>
-                  {motorcycleModels.map((model) => <option key={model} value={model}>{model}</option>)}
+                  {availableMotorcycleModels.map((model) => <option key={model} value={model}>{model}</option>)}
                 </select>
               </label>
             </div>
@@ -1126,6 +1172,85 @@ export default function CustomPanel() {
                 ))}</tbody>
               </table>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === 'models' ? (
+        <div className="grid items-start gap-6 lg:grid-cols-[360px_1fr]">
+          <form onSubmit={createMotorcycleModel} className={`${panelClass} space-y-4`}>
+            <div>
+              <h2 className="text-xl font-black text-white">Nuevo modelo de moto</h2>
+              <p className="mt-1 text-sm text-white/45">Aparecerá en los filtros de la tienda y al cargar productos.</p>
+            </div>
+            <label className={labelClass}>
+              Nombre del modelo
+              <input
+                required
+                value={modelName}
+                onChange={(event) => setModelName(event.target.value)}
+                className={fieldClass}
+                placeholder="Ej: Honda Tornado 250"
+              />
+            </label>
+            <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-50">
+              <Save className="h-4 w-4" /> Agregar modelo
+            </button>
+          </form>
+
+          <div className={`${panelClass} space-y-3`}>
+            <div>
+              <h2 className="text-xl font-black text-white">Modelos disponibles</h2>
+              <p className="mt-1 text-sm text-white/45">Podés renombrar, ordenar, ocultar o eliminar cada opción.</p>
+            </div>
+            {motorcycleModels.length === 0 ? (
+              <p className="rounded-lg border border-white/[0.08] bg-black/20 p-4 text-sm text-white/50">
+                Ejecutá la migración de modelos en Supabase para comenzar a administrarlos.
+              </p>
+            ) : null}
+            {motorcycleModels.map((model) => (
+              <div key={model.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 sm:grid-cols-[1fr_90px_auto_auto] sm:items-end">
+                <label className={labelClass}>
+                  Modelo
+                  <input
+                    defaultValue={model.name}
+                    className={fieldClass}
+                    onBlur={(event) => {
+                      const name = event.target.value.trim();
+                      if (name && name !== model.name) updateMotorcycleModel(model.id, { name });
+                    }}
+                  />
+                </label>
+                <label className={labelClass}>
+                  Orden
+                  <input
+                    type="number"
+                    min="0"
+                    defaultValue={model.orden}
+                    className={fieldClass}
+                    onBlur={(event) => {
+                      const orden = Number(event.target.value);
+                      if (orden !== model.orden) updateMotorcycleModel(model.id, { orden });
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => updateMotorcycleModel(model.id, { activo: !model.activo })}
+                  className={`min-h-11 rounded-lg border px-4 text-sm font-bold ${model.activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-white/10 text-white/45'}`}
+                >
+                  {model.activo ? 'Visible' : 'Oculto'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteMotorcycleModel(model.id)}
+                  aria-label={`Eliminar ${model.name}`}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-secondary/25 bg-secondary/10 text-secondary"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

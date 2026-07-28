@@ -33,6 +33,14 @@ CREATE TABLE IF NOT EXISTS public.products (
   CONSTRAINT unique_product_name_category UNIQUE (name, category)
 );
 
+CREATE TABLE IF NOT EXISTS public.motorcycle_models (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text UNIQUE NOT NULL,
+  activo boolean NOT NULL DEFAULT true,
+  orden integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name text,
@@ -288,6 +296,7 @@ GRANT EXECUTE ON FUNCTION public.create_order_with_items(jsonb, text, text) TO a
 
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.motorcycle_models ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
@@ -302,6 +311,8 @@ CREATE POLICY "Public can view active categories" ON public.categories FOR SELEC
 CREATE POLICY "Admins manage categories" ON public.categories FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY "Public can view products" ON public.products FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Admins manage products" ON public.products FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Public can view active motorcycle models" ON public.motorcycle_models FOR SELECT TO anon, authenticated USING (activo OR public.is_admin());
+CREATE POLICY "Admins manage motorcycle models" ON public.motorcycle_models FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY "Users view own profile" ON public.profiles FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 CREATE POLICY "Users insert own profile" ON public.profiles FOR INSERT TO authenticated WITH CHECK (id = auth.uid());
@@ -348,6 +359,18 @@ ON CONFLICT (name) DO UPDATE SET
   image_url = EXCLUDED.image_url,
   activo = EXCLUDED.activo,
   orden = EXCLUDED.orden;
+
+INSERT INTO public.motorcycle_models (name, activo, orden)
+VALUES
+  ('110cc', true, 1),
+  ('CG / Titan / S2', true, 2),
+  ('Tornado / XR', true, 3),
+  ('Skua', true, 4),
+  ('Rouser', true, 5),
+  ('Twister', true, 6),
+  ('Wave / Biz', true, 7),
+  ('Motomel / Corven / Zanella', true, 8)
+ON CONFLICT (name) DO NOTHING;
 
 COMMIT;
 

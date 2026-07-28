@@ -9,7 +9,7 @@ import { useCartStore } from '../store/cartStore';
 import { Product } from '../types/supabase';
 import { demoProducts } from '../data/demoProducts';
 
-const motoModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
+const defaultMotoModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
 
 function SelectField({
   id,
@@ -51,6 +51,7 @@ function SelectField({
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [motoModels, setMotoModels] = useState<string[]>(defaultMotoModels);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
@@ -115,14 +116,16 @@ export default function ProductsPage() {
   useEffect(() => {
     async function loadFilterData() {
       if (!isSupabaseConfigured) return;
-      const [{ data: categoryData }, { data: productCategories }, { data: prices }] = await Promise.all([
+      const [{ data: categoryData }, { data: productCategories }, { data: prices }, { data: modelData }] = await Promise.all([
         supabase.from('categories').select('name').order('orden', { ascending: true }),
         supabase.from('products').select('category'),
         supabase.from('products').select('price').order('price', { ascending: false }).limit(1),
+        supabase.from('motorcycle_models').select('name').eq('activo', true).order('orden', { ascending: true }),
       ]);
 
       const usedCategories = new Set((productCategories || []).map((item) => item.category));
       setCategories([...new Set((categoryData || []).map((item) => item.name))].filter((category) => usedCategories.has(category)));
+      if (modelData?.length) setMotoModels(modelData.map((model) => model.name));
 
       if (prices?.length) {
         const highestDemoPrice = Math.max(...demoProducts.map((product) => product.price));
