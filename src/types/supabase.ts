@@ -26,6 +26,10 @@ export type CartItem = {
   quantity: number;
   stock: number;
   color?: string;
+  weight_grams?: number;
+  length_cm?: number;
+  width_cm?: number;
+  height_cm?: number;
 };
 
 export type User = {

@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Truck } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type PaymentMethod = 'efectivo' | 'transferencia';
+type ShippingQuote = {
+  id: string;
+  provider: string;
+  service: string;
+  deliveryType: string;
+  price: number;
+  deliveryDaysMin?: number;
+  deliveryDaysMax?: number;
+};
 
 const WHATSAPP_PHONE = '5403534099785';
 
@@ -29,6 +38,11 @@ export default function Cart() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transferencia');
   const [submitting, setSubmitting] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([]);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null);
+  const [shippingMessage, setShippingMessage] = useState('');
+  const [quotingShipping, setQuotingShipping] = useState(false);
 
   const handleQuantityChange = (cartItemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -39,7 +53,7 @@ export default function Cart() {
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 0;
+  const shipping = selectedShipping?.price || 0;
   const total = subtotal + shipping;
   const hasPendingPrices = cartItems.some((item) => item.price <= 0);
 
@@ -50,6 +64,53 @@ export default function Cart() {
     if (!hasPendingPrices) return formatARS(Math.round(total));
     if (total <= 0) return 'Precio total a confirmar';
     return `${formatARS(Math.round(total))} + precios a confirmar`;
+  };
+
+  const quoteShipping = async () => {
+    setQuotingShipping(true);
+    setShippingMessage('');
+    setShippingQuotes([]);
+    setSelectedShipping(null);
+
+    const missingDimensions = cartItems.some(
+      (item) => !item.weight_grams || !item.length_cm || !item.width_cm || !item.height_cm
+    );
+    if (missingDimensions) {
+      setShippingMessage('Hay productos sin peso o medidas. Podés pedir el envío por WhatsApp.');
+      setQuotingShipping(false);
+      return;
+    }
+
+    const parcel = {
+      weightGrams: cartItems.reduce((sum, item) => sum + Number(item.weight_grams) * item.quantity, 0),
+      lengthCm: Math.max(...cartItems.map((item) => Number(item.length_cm))),
+      widthCm: Math.max(...cartItems.map((item) => Number(item.width_cm))),
+      heightCm: cartItems.reduce((sum, item) => sum + Number(item.height_cm) * item.quantity, 0),
+    };
+
+    try {
+      const response = await fetch('/api/shipping/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destinationPostalCode: postalCode, parcel }),
+      });
+      const payload = (await response.json()) as {
+        quotes?: ShippingQuote[];
+        unavailable?: Array<{ provider: string; reason: string }>;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(payload.error || 'No se pudo calcular el envío.');
+
+      const quotes = payload.quotes || [];
+      setShippingQuotes(quotes);
+      if (quotes.length) setSelectedShipping(quotes[0]);
+      const notices = (payload.unavailable || []).map((item) => `${item.provider}: ${item.reason}`);
+      if (!quotes.length || notices.length) setShippingMessage(notices.join(' '));
+    } catch (error) {
+      setShippingMessage(error instanceof Error ? error.message : 'No se pudo calcular el envío.');
+    } finally {
+      setQuotingShipping(false);
+    }
   };
 
   const checkoutByWhatsApp = async () => {
@@ -88,6 +149,7 @@ export default function Cart() {
         `Hola MotoSport Neuquén, ya hice el pedido ${orderId} desde la web.\n\n` +
         `${lines.join('\n')}\n\n` +
         `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
+        `${selectedShipping ? `Envío: ${selectedShipping.provider} - ${selectedShipping.service} (${selectedShipping.deliveryType}) - ${formatARS(Math.round(selectedShipping.price))}\n` : 'Envío: a coordinar\n'}` +
         `Total: ${formatOrderTotal()}\n\n` +
         `Quedo atento/a para coordinar.`;
 
@@ -108,6 +170,7 @@ export default function Cart() {
       `Hola MotoSport Neuquén, quiero comprar estos productos:\n\n` +
       `${lines.join('\n')}\n\n` +
       `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
+      `${selectedShipping ? `Envío: ${selectedShipping.provider} - ${selectedShipping.service} (${selectedShipping.deliveryType}) - ${formatARS(Math.round(selectedShipping.price))}\n` : 'Envío: a coordinar\n'}` +
       `Total: ${formatOrderTotal()}\n\n` +
       `Quedo atento/a para coordinar.`;
 
@@ -194,7 +257,7 @@ export default function Cart() {
               </div>
               <div className="flex justify-between gap-4 text-gray-300">
                 <span>Envio</span>
-                <span>Gratis</span>
+                <span>{selectedShipping ? formatARS(Math.round(shipping)) : 'A calcular'}</span>
               </div>
               <div className="border-t border-gray-700 pt-2 mt-2">
                 <div className="flex justify-between gap-4 text-lg font-semibold text-white">
@@ -202,6 +265,62 @@ export default function Cart() {
                   <span className="text-right text-white">{formatOrderTotal()}</span>
                 </div>
               </div>
+            </div>
+
+            <div className="mb-5 rounded-lg border border-white/15 bg-white/[0.03] p-4">
+              <label htmlFor="postal-code" className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
+                <Truck className="h-4 w-4 text-primary" />
+                Calcular envío
+              </label>
+              <p className="mb-3 text-xs text-gray-400">Ingresá el código postal donde querés recibirlo.</p>
+              <div className="flex gap-2">
+                <input
+                  id="postal-code"
+                  value={postalCode}
+                  onChange={(event) => setPostalCode(event.target.value.toUpperCase())}
+                  placeholder="Ej: 8300"
+                  maxLength={8}
+                  className="min-w-0 flex-1 rounded-md border border-white/25 bg-black/60 px-3 py-2 text-white outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={quoteShipping}
+                  disabled={quotingShipping || !postalCode.trim()}
+                  className="rounded-md bg-primary px-3 py-2 font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {quotingShipping ? '...' : 'Calcular'}
+                </button>
+              </div>
+
+              {shippingQuotes.length ? (
+                <div className="mt-3 space-y-2">
+                  {shippingQuotes.map((quote) => (
+                    <label
+                      key={quote.id}
+                      className="flex cursor-pointer items-start gap-3 rounded-md border border-white/15 p-3 hover:border-primary/70"
+                    >
+                      <input
+                        type="radio"
+                        name="shipping"
+                        checked={selectedShipping?.id === quote.id}
+                        onChange={() => setSelectedShipping(quote)}
+                        className="mt-1 accent-[#56f000]"
+                      />
+                      <span className="min-w-0 flex-1 text-sm">
+                        <span className="block font-semibold text-white">{quote.provider} · {quote.deliveryType}</span>
+                        <span className="block text-gray-400">
+                          {quote.service}
+                          {quote.deliveryDaysMin
+                            ? ` · ${quote.deliveryDaysMin}${quote.deliveryDaysMax && quote.deliveryDaysMax !== quote.deliveryDaysMin ? ` a ${quote.deliveryDaysMax}` : ''} días`
+                            : ''}
+                        </span>
+                      </span>
+                      <span className="text-sm font-semibold text-white">{formatARS(Math.round(quote.price))}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              {shippingMessage ? <p className="mt-3 text-xs text-amber-300">{shippingMessage}</p> : null}
             </div>
 
             <div className="mb-4">

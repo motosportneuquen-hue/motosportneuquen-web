@@ -37,6 +37,10 @@ export const useCartStore = create<CartStore>((set) => ({
             quantity: 1,
             stock: product.stock,
             color,
+            weight_grams: product.weight_grams,
+            length_cm: product.length_cm,
+            width_cm: product.width_cm,
+            height_cm: product.height_cm,
           } as CartItem,
         ],
       };
