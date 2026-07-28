@@ -257,7 +257,7 @@ export default function ProductDetail() {
       {/* Productos relacionados */}
       {relatedProductos.length > 0 && (
         <div className="mt-16">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          <h2 className="mb-6 text-2xl font-black text-white">
             Productos relacionados
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-6">
@@ -265,15 +265,15 @@ export default function ProductDetail() {
               <Link 
                 key={relatedProduct.id} 
                 to={`/products/${relatedProduct.id}`}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 btn-hover-shadow"
+                className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#101010] shadow-md transition duration-300 hover:-translate-y-0.5 hover:border-primary/30 btn-hover-shadow"
               >
                 <img
                   src={relatedProduct.image_url}
                   alt={relatedProduct.name}
-                  className="w-full h-48 object-cover"
+                  className="h-48 w-full bg-[#f5f5f5] object-contain p-3"
                 />
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-semibold text-white">
                     {relatedProduct.name}
                   </h3>
                   <p className="text-white font-extrabold mt-2">
