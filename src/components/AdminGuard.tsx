@@ -14,7 +14,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace state={{ from: '/admin-speedy', message: 'Inicia sesion para acceder al panel.' }} />;
+    return <Navigate to="/auth" replace state={{ from: '/admin-motosportneu', message: 'Inicia sesion para acceder al panel.' }} />;
   }
 
   if (!profile) {

@@ -77,7 +77,7 @@ function App() {
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/categories" element={<Navigate to="/products" replace />} />
           <Route path="/profile" element={<Navigate to="/" replace />} />
-          <Route path="/admin-speedy" element={<AdminGuard><CustomPanel /></AdminGuard>} />
+          <Route path="/admin-motosportneu" element={<AdminGuard><CustomPanel /></AdminGuard>} />
         </Routes>
       </main>
 

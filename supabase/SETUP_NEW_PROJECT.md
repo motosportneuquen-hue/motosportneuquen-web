@@ -36,7 +36,7 @@ WHERE p.id = u.id
 ```
 
 4. Cerrá sesión en la tienda y volvé a ingresar.
-5. Abrí `/admin-speedy`.
+5. Abrí `/admin-motosportneu`.
 
 ## 3. Verificar la instalación
 
