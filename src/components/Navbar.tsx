@@ -12,7 +12,6 @@ const links = [
   { label: 'Productos', to: '/products' },
   { label: 'Ofertas', to: '/offers' },
   { label: 'Nosotros', to: '/about' },
-  { label: 'Contacto', to: '/contact' },
 ];
 
 export default function Navbar() {
