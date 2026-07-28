@@ -29,6 +29,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check-migrations": "node scripts/check-migrations.js",
+    "verify-supabase": "node scripts/verify-new-supabase.js",
     "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
