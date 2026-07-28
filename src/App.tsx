@@ -1,5 +1,5 @@
 ﻿import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppFloat from './components/WhatsAppFloat';
@@ -26,6 +26,13 @@ import './styles/animations.css';
 
 function App() {
   const { checkUser } = useAuthStore();
+  const location = useLocation();
+
+  useEffect(() => {
+    const isAdminPage = location.pathname.startsWith('/admin-motosportneu');
+    document.documentElement.classList.toggle('admin-page', isAdminPage);
+    return () => document.documentElement.classList.remove('admin-page');
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
