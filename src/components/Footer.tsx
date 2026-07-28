@@ -1,4 +1,4 @@
-import { ArrowUpRight, Instagram, MapPin, MessageCircle } from 'lucide-react';
+import { ArrowUpRight, Clock3, Instagram, MapPin, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/motosportneuquen/';
@@ -43,7 +43,11 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Contacto</h3>
             <div className="mt-5 space-y-4 text-sm text-white/45">
-              <p className="flex gap-3"><MapPin className="h-5 w-5 shrink-0 text-primary" /> Neuquén, Argentina<br />Envíos a todo el país</p>
+              <a href="https://www.google.com/maps/search/?api=1&query=Cacique+Catriel+154%2C+Neuqu%C3%A9n" target="_blank" rel="noreferrer" className="flex gap-3 hover:text-white">
+                <MapPin className="h-5 w-5 shrink-0 text-primary" />
+                <span>Cacique Catriel 154<br />Neuquén, Neuquén</span>
+              </a>
+              <p className="flex gap-3"><Clock3 className="h-5 w-5 shrink-0 text-primary" /><span>Lun. a vie.: 9 a 21 hs<br />Sábados: 9 a 20 hs</span></p>
               <p className="font-semibold text-white/70">+54 9 299 534-3094</p>
               <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 font-bold text-white hover:text-primary">Escribinos por WhatsApp <ArrowUpRight className="h-4 w-4" /></a>
             </div>

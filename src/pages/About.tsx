@@ -1,4 +1,4 @@
-import { MessageCircle, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
+import { Clock3, CreditCard, MapPin, MessageCircle, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
 
 const values = [
   { icon: PackageCheck, title: 'Repuestos para motos', text: 'Catalogo de repuestos, accesorios, indumentaria y productos para el cuidado de tu moto.' },
@@ -26,6 +26,11 @@ export default function About() {
               <p className="mt-2 text-gray-300">{text}</p>
             </article>
           ))}
+        </div>
+        <div className="mt-8 grid gap-4 rounded-2xl border border-primary/20 bg-[#101010] p-5 sm:grid-cols-3 sm:p-7">
+          <div className="flex gap-3"><MapPin className="h-6 w-6 shrink-0 text-primary" /><p><b>Cacique Catriel 154</b><br /><span className="text-sm text-white/45">Neuquén, Neuquén</span></p></div>
+          <div className="flex gap-3"><Clock3 className="h-6 w-6 shrink-0 text-primary" /><p><b>Lun. a vie.: 9 a 21 hs</b><br /><span className="text-sm text-white/45">Sábados: 9 a 20 hs</span></p></div>
+          <div className="flex gap-3"><CreditCard className="h-6 w-6 shrink-0 text-primary" /><p><b>Mercado Pago</b><br /><span className="text-sm text-white/45">Todas las tarjetas</span></p></div>
         </div>
       </div>
     </section>

@@ -5,11 +5,13 @@ const questions = [
   { question: '¿Como hago un pedido?', answer: 'Agrega los productos a la bolsa y selecciona Comprar por WhatsApp. Recibiremos el detalle para coordinar la compra.' },
   { question: '¿Que significa “Precio a confirmar”?', answer: 'El valor se consulta antes de cerrar el pedido. No se cobra ni se confirma un total de $0.' },
   { question: '¿Como confirmo que el repuesto sirve para mi moto?', answer: 'Envianos por WhatsApp marca, modelo, cilindrada y año. Si hace falta, tambien podes adjuntar una foto del repuesto.' },
-  { question: '¿Que formas de pago ofrecen?', answer: 'Los pedidos pueden coordinarse con pago en efectivo o transferencia.' },
+  { question: '¿Qué formas de pago ofrecen?', answer: 'Aceptamos Mercado Pago y todas las tarjetas. La modalidad se confirma al coordinar la compra.' },
+  { question: '¿Dónde están y en qué horarios atienden?', answer: 'Estamos en Cacique Catriel 154, Neuquén. Atendemos de lunes a viernes de 9 a 21 hs y los sábados de 9 a 20 hs.' },
   { question: '¿Realizan envios?', answer: 'Si, realizamos envios a todo el pais. El medio, costo y plazo se confirman para cada pedido.' },
   { question: '¿El stock del catalogo esta actualizado?', answer: 'El sistema controla el stock al registrar la compra. De todos modos, la confirmacion final se realiza por WhatsApp.' },
   { question: '¿Como consulto un pedido?', answer: 'Usa la pagina Consulta tu pedido o escribinos directamente por WhatsApp con el numero recibido.' },
   { question: '¿Que hago si tengo un inconveniente?', answer: 'Contactanos por WhatsApp con el numero de pedido, una descripcion y fotos si corresponde. Revisaremos el caso personalmente.' },
+  { question: '¿Los productos eléctricos tienen cambio?', answer: 'No. Los productos eléctricos no tienen cambio. Recomendamos confirmar compatibilidad y condiciones antes de comprarlos.' },
 ];
 
 export default function FAQ() {

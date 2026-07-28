@@ -15,7 +15,7 @@ const sections = [
   {
     title: 'Pagos',
     paragraphs: [
-      'Las opciones mostradas son efectivo y transferencia. Los datos necesarios para completar el pago se coordinan directamente con MotoSport Neuquén. Este sitio no solicita ni almacena datos de tarjetas.',
+      'MotoSport Neuquén acepta Mercado Pago y tarjetas. La modalidad disponible se coordina al confirmar el pedido. Este sitio no solicita ni almacena datos completos de tarjetas.',
     ],
   },
   {

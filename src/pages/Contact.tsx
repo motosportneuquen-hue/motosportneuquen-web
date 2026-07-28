@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Instagram, MessageCircle, Send } from 'lucide-react';
+import { Clock3, CreditCard, Instagram, MapPin, MessageCircle, Send } from 'lucide-react';
 
 const WHATSAPP_PHONE = '5492995343094';
 const INSTAGRAM_URL = 'https://www.instagram.com/motosportneuquen/';
@@ -29,6 +29,15 @@ export default function Contact() {
         <div className="mt-8 grid gap-6 md:grid-cols-[1fr_1.5fr]">
           <div className="space-y-4">
             <a
+              href="https://www.google.com/maps/search/?api=1&query=Cacique+Catriel+154%2C+Neuqu%C3%A9n"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-primary/30 bg-black p-4 hover:bg-primary/[0.05]"
+            >
+              <MapPin className="h-6 w-6 text-primary" />
+              <span><strong>Cacique Catriel 154</strong><br /><small className="text-gray-300">Neuquén, Neuquén</small></span>
+            </a>
+            <a
               href={`https://wa.me/${WHATSAPP_PHONE}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -49,6 +58,12 @@ export default function Contact() {
             <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300">
               Realizamos envios a todo el pais. El costo, el medio y el plazo se coordinan antes de confirmar.
             </p>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300">
+              <p className="flex gap-3"><Clock3 className="h-5 w-5 shrink-0 text-primary" /><span><strong className="text-white">Horarios</strong><br />Lunes a viernes de 9 a 21 hs<br />Sábados de 9 a 20 hs</span></p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300">
+              <p className="flex gap-3"><CreditCard className="h-5 w-5 shrink-0 text-primary" /><span><strong className="text-white">Medios de pago</strong><br />Mercado Pago y todas las tarjetas.</span></p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-white/10 bg-black/60 p-5">
