@@ -3,6 +3,7 @@
   name: string;
   description: string;
   price: number;
+  transfer_price?: number | null;
   cost_price?: number | null;
   image_url: string;
   category: string;

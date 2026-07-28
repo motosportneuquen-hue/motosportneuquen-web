@@ -13,6 +13,7 @@ type ProductForm = {
   name: string;
   description: string;
   price: string;
+  transfer_price: string;
   stock: string;
   category: string;
   motorcycle_model: string;
@@ -164,6 +165,7 @@ const emptyProduct: ProductForm = {
   name: '',
   description: '',
   price: '',
+  transfer_price: '',
   stock: '1',
   category: '',
   motorcycle_model: '',
@@ -548,6 +550,7 @@ export default function CustomPanel() {
         name: productForm.name.trim(),
         description: productForm.description.trim(),
         price: productForm.price.trim() === '' ? 0 : Number(productForm.price),
+        transfer_price: productForm.transfer_price.trim() === '' ? null : Number(productForm.transfer_price),
         stock: Number(productForm.stock),
         category: productForm.category.trim(),
         motorcycle_model: productForm.motorcycle_model.trim() || null,
@@ -681,6 +684,7 @@ export default function CustomPanel() {
       name: product.name || '',
       description: product.description || '',
       price: String(product.price || ''),
+      transfer_price: product.transfer_price == null ? '' : String(product.transfer_price),
       stock: String(product.stock || 0),
       category: product.category || '',
       motorcycle_model: product.motorcycle_model || '',
@@ -1727,7 +1731,8 @@ export default function CustomPanel() {
             <label className={labelClass}>Nombre<input required className={fieldClass} value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} /></label>
             <label className={labelClass}>Descripcion<textarea required className={`${fieldClass} min-h-24`} value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} /></label>
             <div className="grid grid-cols-2 gap-3">
-              <label className={labelClass}>Precio ARS (opcional)<input type="number" min="0" placeholder="Deja vacio para consultar" className={fieldClass} value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} /></label>
+              <label className={labelClass}>Precio normal ARS (opcional)<input type="number" min="0" placeholder="Dejá vacío para consultar" className={fieldClass} value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} /></label>
+              <label className={labelClass}>Precio por transferencia ARS (opcional)<input type="number" min="0" placeholder="Ej: 85000" className={fieldClass} value={productForm.transfer_price} onChange={(e) => setProductForm({ ...productForm, transfer_price: e.target.value })} /></label>
               <label className={labelClass}>Stock<input required type="number" min="0" className={fieldClass} value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} /></label>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -1853,10 +1858,10 @@ export default function CustomPanel() {
 
             <div className={`${panelClass} overflow-x-auto`}>
               <table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="text-white"><tr><th className="p-2">Producto</th><th className="p-2">Categoria</th><th className="p-2">Modelo</th><th className="p-2">Precio</th><th className="p-2">Stock</th><th className="p-2">Paquete</th><th className="p-2">Mas vendido</th><th className="p-2">Acciones</th></tr></thead>
+                <thead className="text-white"><tr><th className="p-2">Producto</th><th className="p-2">Categoria</th><th className="p-2">Modelo</th><th className="p-2">Precio</th><th className="p-2">Transferencia</th><th className="p-2">Stock</th><th className="p-2">Paquete</th><th className="p-2">Mas vendido</th><th className="p-2">Acciones</th></tr></thead>
                 <tbody>{filteredProducts.map((product) => (
                   <tr key={product.id} className="border-t border-white/10 text-gray-200">
-                    <td className="p-2">{product.name}</td><td className="p-2">{product.category}</td><td className="p-2">{product.motorcycle_model || 'Sin modelo'}</td><td className="p-2 text-white">{product.price > 0 ? formatARS(Math.round(product.price)) : 'Consultar precio'}</td><td className="p-2">{product.stock}</td><td className="p-2 text-xs">{product.weight_grams || 500} g<br />{product.length_cm || 20}×{product.width_cm || 15}×{product.height_cm || 10} cm</td><td className="p-2">{product.is_best_seller ? 'Si' : 'No'}</td>
+                    <td className="p-2">{product.name}</td><td className="p-2">{product.category}</td><td className="p-2">{product.motorcycle_model || 'Sin modelo'}</td><td className="p-2 text-white">{product.price > 0 ? formatARS(Math.round(product.price)) : 'Consultar precio'}</td><td className="p-2 font-bold text-primary">{product.transfer_price != null && product.transfer_price > 0 ? formatARS(Math.round(product.transfer_price)) : '—'}</td><td className="p-2">{product.stock}</td><td className="p-2 text-xs">{product.weight_grams || 500} g<br />{product.length_cm || 20}×{product.width_cm || 15}×{product.height_cm || 10} cm</td><td className="p-2">{product.is_best_seller ? 'Si' : 'No'}</td>
                     <td className="flex gap-2 p-2"><button onClick={() => editProduct(product)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button><button onClick={() => deleteProduct(product.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button></td>
                   </tr>
                 ))}</tbody>

@@ -178,6 +178,11 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
             <p className="text-2xl font-black text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] mb-4">
               {formatProductPrice(Math.round(product.price))}
             </p>
+            {product.transfer_price != null && product.transfer_price > 0 ? (
+              <p className="mb-4 -mt-2 font-black text-primary">
+                {formatProductPrice(Math.round(product.transfer_price))} por transferencia
+              </p>
+            ) : null}
             
             <p className="text-gray-600 dark:text-gray-300 mb-6 line-clamp-4">
               {product.description}

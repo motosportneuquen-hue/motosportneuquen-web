@@ -161,6 +161,14 @@ export default function ProductDetail() {
           <p className="mb-4 break-words text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.35)] sm:text-3xl">
             {formatProductPrice(Math.round(product.price))}
           </p>
+          {product.transfer_price != null && product.transfer_price > 0 ? (
+            <div className="mb-5 inline-flex rounded-lg border border-primary/30 bg-primary/[0.08] px-4 py-3">
+              <p className="font-black text-primary">
+                {formatProductPrice(Math.round(product.transfer_price))}
+                <span className="ml-2 text-sm font-bold text-primary/75">por transferencia</span>
+              </p>
+            </div>
+          ) : null}
           
           <div className="mb-6">
             <p className="text-gray-200 mb-2">

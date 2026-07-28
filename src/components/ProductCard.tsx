@@ -72,7 +72,14 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
         </div>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/45">{product.description}</p>
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-          <p className="text-xl font-black text-white">{isOnRequest ? 'Consultar' : formatProductPrice(Math.round(product.price))}</p>
+          <div>
+            <p className="text-xl font-black text-white">{isOnRequest ? 'Consultar' : formatProductPrice(Math.round(product.price))}</p>
+            {!isOnRequest && product.transfer_price != null && product.transfer_price > 0 ? (
+              <p className="mt-1 text-sm font-black text-primary">
+                {formatProductPrice(Math.round(product.transfer_price))} por transferencia
+              </p>
+            ) : null}
+          </div>
           <button
             onClick={handleAddToCart}
             disabled={!isOnRequest && product.stock === 0}
