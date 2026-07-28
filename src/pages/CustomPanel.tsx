@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
-import { Category, Product, ProductImage, Testimonial } from '../types/supabase';
+import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
 import { formatARS } from '../lib/currency';
 
 type ProductForm = {
@@ -77,6 +77,10 @@ type AdminMotorcycleModel = {
   activo: boolean;
   orden: number;
   created_at: string;
+};
+
+type AdminOffer = Offer & {
+  products?: Product;
 };
 
 type AdminOrderItem = {
@@ -303,7 +307,7 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'models' | 'testimonials' | 'debtors' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -311,6 +315,10 @@ export default function CustomPanel() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [motorcycleModels, setMotorcycleModels] = useState<AdminMotorcycleModel[]>([]);
   const [modelName, setModelName] = useState('');
+  const [offers, setOffers] = useState<AdminOffer[]>([]);
+  const [offerProductId, setOfferProductId] = useState('');
+  const [offerPercent, setOfferPercent] = useState('10');
+  const [offerTitle, setOfferTitle] = useState('Oferta especial');
   const [productImages, setProductImages] = useState<Record<string, ProductImage[]>>({});
   const [productForm, setProductForm] = useState<ProductForm>(emptyProduct);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(emptyCategory);
@@ -381,7 +389,7 @@ export default function CustomPanel() {
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
 
-    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }] = await Promise.all([
+    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }, { data: offersData }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
@@ -389,6 +397,7 @@ export default function CustomPanel() {
       supabase.from('debtors').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*, order_items(id, quantity, price, products(name))').order('created_at', { ascending: false }),
       supabase.from('motorcycle_models').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
+      supabase.from('offers').select('*, products(*)').order('orden', { ascending: true }).order('created_at', { ascending: false }),
     ]);
 
     setProducts((productData || []) as Product[]);
@@ -397,6 +406,7 @@ export default function CustomPanel() {
     setDebtors((debtorsData || []) as AdminDebtor[]);
     setOrders((ordersData || []) as AdminOrder[]);
     setMotorcycleModels((modelsData || []) as AdminMotorcycleModel[]);
+    setOffers((offersData || []) as AdminOffer[]);
 
     const groupedImages = ((imagesData || []) as ProductImage[]).reduce<Record<string, ProductImage[]>>((acc, image) => {
       acc[image.product_id] = [...(acc[image.product_id] || []), image];
@@ -832,6 +842,48 @@ export default function CustomPanel() {
     if (!error) await loadData();
   };
 
+  const createOffer = async (event: FormEvent) => {
+    event.preventDefault();
+    const product = products.find((item) => item.id === offerProductId);
+    const percent = Math.min(90, Math.max(1, Number(offerPercent)));
+    if (!product || product.price <= 0) {
+      setMessage('Elegí un producto con precio cargado.');
+      return;
+    }
+
+    setSaving(true);
+    const offerPrice = Math.round(product.price * (1 - percent / 100));
+    const nextOrder = offers.reduce((max, offer) => Math.max(max, Number(offer.orden || 0)), 0) + 1;
+    const { error } = await supabase.from('offers').insert({
+      product_id: product.id,
+      title: offerTitle.trim() || 'Oferta especial',
+      badge: `${percent}% OFF`,
+      offer_price: offerPrice,
+      activo: true,
+      orden: nextOrder,
+    });
+    setMessage(error ? `No se pudo crear la oferta: ${error.message}` : 'Oferta creada correctamente.');
+    if (!error) {
+      setOfferProductId('');
+      setOfferPercent('10');
+    }
+    setSaving(false);
+    await loadData();
+  };
+
+  const updateOffer = async (offerId: string, changes: Partial<Pick<AdminOffer, 'activo' | 'orden'>>) => {
+    const { error } = await supabase.from('offers').update(changes).eq('id', offerId);
+    setMessage(error ? `No se pudo actualizar la oferta: ${error.message}` : 'Oferta actualizada.');
+    if (!error) await loadData();
+  };
+
+  const deleteOffer = async (offerId: string) => {
+    if (!confirm('¿Seguro que querés eliminar esta oferta?')) return;
+    const { error } = await supabase.from('offers').delete().eq('id', offerId);
+    setMessage(error ? `No se pudo eliminar la oferta: ${error.message}` : 'Oferta eliminada.');
+    if (!error) await loadData();
+  };
+
   const exportDebtorsCsv = () => {
     const rows = debtors.map((debtor) => ({
       estado: debtor.status === 'paid' || debtor.paid_at ? 'Pagado' : 'Pendiente',
@@ -927,6 +979,7 @@ export default function CustomPanel() {
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#101010] p-1.5">
         {[
           ['orders', 'Pedidos'],
+          ['offers', 'Ofertas'],
           ['products', 'Productos'],
           ['categories', 'Categorias'],
           ['models', 'Modelos de moto'],
@@ -940,6 +993,77 @@ export default function CustomPanel() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'offers' ? (
+        <div className="grid items-start gap-6 lg:grid-cols-[380px_1fr]">
+          <form onSubmit={createOffer} className={`${panelClass} space-y-4`}>
+            <div>
+              <h2 className="text-xl font-black text-white">Nueva oferta</h2>
+              <p className="mt-1 text-sm text-white/45">El precio original no se modifica.</p>
+            </div>
+            <label className={labelClass}>
+              Producto
+              <select required value={offerProductId} onChange={(event) => setOfferProductId(event.target.value)} className={fieldClass}>
+                <option value="">Seleccionar producto</option>
+                {products.filter((product) => product.price > 0).map((product) => (
+                  <option key={product.id} value={product.id}>{product.name} · {formatARS(Math.round(product.price))}</option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
+              Porcentaje de descuento
+              <div className="relative">
+                <input required type="number" min="1" max="90" value={offerPercent} onChange={(event) => setOfferPercent(event.target.value)} className={`${fieldClass} pr-10`} />
+                <span className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 font-black text-primary">%</span>
+              </div>
+            </label>
+            <label className={labelClass}>
+              Título
+              <input value={offerTitle} onChange={(event) => setOfferTitle(event.target.value)} className={fieldClass} placeholder="Oferta especial" />
+            </label>
+            {offerProductId ? (() => {
+              const product = products.find((item) => item.id === offerProductId);
+              const percent = Math.min(90, Math.max(1, Number(offerPercent) || 0));
+              if (!product) return null;
+              return (
+                <div className="rounded-lg border border-primary/20 bg-primary/[0.06] p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-white/45">Precio con descuento</p>
+                  <p className="mt-1 text-2xl font-black text-primary">{formatARS(Math.round(product.price * (1 - percent / 100)))}</p>
+                </div>
+              );
+            })() : null}
+            <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-50">
+              <Save className="h-4 w-4" /> Publicar oferta
+            </button>
+          </form>
+
+          <div className={`${panelClass} space-y-3`}>
+            <div>
+              <h2 className="text-xl font-black text-white">Ofertas publicadas</h2>
+              <p className="mt-1 text-sm text-white/45">Administrá qué promociones aparecen en la sección Ofertas.</p>
+            </div>
+            {offers.length === 0 ? <p className="rounded-lg border border-white/[0.08] p-4 text-sm text-white/45">No hay ofertas creadas.</p> : null}
+            {offers.map((offer) => (
+              <div key={offer.id} className="flex flex-col gap-4 rounded-lg border border-white/[0.08] bg-black/25 p-4 sm:flex-row sm:items-center">
+                <img src={offer.products?.image_url} alt="" className="h-20 w-20 rounded-lg bg-white object-contain p-2" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-white">{offer.products?.name || 'Producto eliminado'}</p>
+                  <p className="mt-1 text-sm text-white/45">{offer.title} · <span className="font-bold text-primary">{offer.badge}</span></p>
+                  <p className="mt-1 font-black text-white">{formatARS(Math.round(Number(offer.offer_price || 0)))}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => updateOffer(offer.id, { activo: !offer.activo })} className={`min-h-10 rounded-lg border px-3 text-sm font-bold ${offer.activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-white/10 text-white/45'}`}>
+                    {offer.activo ? 'Visible' : 'Oculta'}
+                  </button>
+                  <button type="button" onClick={() => deleteOffer(offer.id)} className="flex h-10 w-10 items-center justify-center rounded-lg border border-secondary/25 bg-secondary/10 text-secondary" aria-label="Eliminar oferta">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {activeTab === 'orders' ? (
         <div className="space-y-4">

@@ -4,9 +4,6 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { formatProductPrice } from '../lib/currency';
 import { Offer, Product } from '../types/supabase';
 
-const offerLabels = ['Oferta semanal', 'Oferta del mes', 'Especial dia del padre'];
-const salePercents = ['20% OFF', '10% OFF', 'SALE'];
-
 type VisibleOffer = {
   id: string;
   product: Product;
@@ -48,25 +45,8 @@ export default function Offers() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .gt('price', 0)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) {
-        console.error('Error cargando ofertas:', error);
-      } else {
-        setOffers(((data || []) as Product[]).map((product, index) => ({
-          id: product.id,
-          product,
-          title: offerLabels[index] || 'Oferta especial',
-          badge: salePercents[index] || 'SALE',
-          price: product.price,
-        })));
-      }
-
+      if (offerError) console.error('Error cargando ofertas:', offerError);
+      setOffers([]);
       setLoading(false);
     }
 
@@ -144,7 +124,7 @@ export default function Offers() {
         </div>
       ) : (
         <div className="rounded-md border border-white/25 bg-white/10 p-8 text-center text-white backdrop-blur-md">
-          No hay productos cargados para mostrar ofertas.
+          No hay ofertas activas en este momento.
         </div>
       )}
     </section>
