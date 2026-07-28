@@ -857,7 +857,16 @@ export default function CustomPanel() {
               <label className={labelClass}>Stock<input required type="number" min="0" className={fieldClass} value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} /></label>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <label className={labelClass}>Categoria<input required list="admin-categories" className={fieldClass} value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })} /></label>
+              <label className={labelClass}>
+                Categoria
+                <select required className={fieldClass} value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
+                  <option value="">Seleccionar categoria</option>
+                  {productForm.category && !categories.some((category) => category.name === productForm.category) ? (
+                    <option value={productForm.category}>{productForm.category}</option>
+                  ) : null}
+                  {categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
+                </select>
+              </label>
               <label className={labelClass}>
                 Modelo de moto
                 <select className={fieldClass} value={productForm.motorcycle_model} onChange={(e) => setProductForm({ ...productForm, motorcycle_model: e.target.value })}>
@@ -866,7 +875,6 @@ export default function CustomPanel() {
                 </select>
               </label>
             </div>
-            <datalist id="admin-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist>
             <label className={labelClass}>
               Imagen principal
               <input type="file" accept="image/*" className={fieldClass} disabled={uploading} onChange={(e) => uploadProductFiles(e.target.files, 'main')} />
