@@ -1,6 +1,6 @@
 import { ArrowRight, Bike, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const modelsByBrand: Record<string, string[]> = {
   Honda: ['CG / Titan / S2', 'Tornado / XR', 'Twister', 'Wave / Biz'],
@@ -83,9 +83,6 @@ export default function MotoFinder() {
                 Buscar <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-            <Link to="/armar-moto" className="lg:col-start-2 inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-secondary transition hover:text-primary">
-              <Bike className="h-4 w-4" /> Probar configurador 3D <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
         </div>
       </div>

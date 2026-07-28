@@ -11,7 +11,6 @@ const links = [
   { label: 'Inicio', to: '/' },
   { label: 'Productos', to: '/products' },
   { label: 'Ofertas', to: '/offers' },
-  { label: 'Armá tu moto', to: '/armar-moto' },
   { label: 'Nosotros', to: '/about' },
 ];
 
