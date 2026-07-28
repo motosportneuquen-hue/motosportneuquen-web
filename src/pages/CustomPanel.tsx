@@ -1,7 +1,7 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { CheckCircle, Download, Edit, RefreshCw, Save, Search, Trash2 } from 'lucide-react';
+import { CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Category, Product, ProductImage, Testimonial } from '../types/supabase';
@@ -71,6 +71,29 @@ type AdminDebtor = {
   created_at: string;
 };
 
+type AdminOrderItem = {
+  id: string;
+  quantity: number;
+  price: number;
+  products?: { name?: string } | null;
+};
+
+type AdminOrder = {
+  id: string;
+  total_price: number;
+  status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
+  payment_method?: string | null;
+  source?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  shipping_provider?: string | null;
+  shipping_service?: string | null;
+  tracking_number?: string | null;
+  admin_notes?: string | null;
+  created_at: string;
+  order_items?: AdminOrderItem[];
+};
+
 type BulkProductRow = {
   name: string;
   category?: string;
@@ -133,6 +156,14 @@ const labelClass = 'block text-xs font-bold uppercase tracking-[0.08em] text-whi
 const panelClass = 'rounded-xl border border-white/[0.08] bg-[#111] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.16)]';
 const sharedBrandImage = '/branding/motosport-neuquen-logo.png';
 const motorcycleModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
+const orderStatuses = [
+  ['pending', 'Pendiente'],
+  ['confirmed', 'Confirmado'],
+  ['preparing', 'Preparando'],
+  ['shipped', 'Enviado'],
+  ['delivered', 'Entregado'],
+  ['cancelled', 'Cancelado'],
+] as const;
 
 function splitList(value: string) {
   return value
@@ -264,11 +295,12 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'testimonials' | 'debtors'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'testimonials' | 'debtors' | 'orders'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [debtors, setDebtors] = useState<AdminDebtor[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [productImages, setProductImages] = useState<Record<string, ProductImage[]>>({});
   const [productForm, setProductForm] = useState<ProductForm>(emptyProduct);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(emptyCategory);
@@ -334,18 +366,20 @@ export default function CustomPanel() {
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
 
-    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }] = await Promise.all([
+    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('product_images').select('*').order('display_order', { ascending: true }),
       supabase.from('debtors').select('*').order('created_at', { ascending: false }),
+      supabase.from('orders').select('*, order_items(id, quantity, price, products(name))').order('created_at', { ascending: false }),
     ]);
 
     setProducts((productData || []) as Product[]);
     setCategories((categoryData || []) as AdminCategory[]);
     setTestimonials((testimonialsData || []) as Testimonial[]);
     setDebtors((debtorsData || []) as AdminDebtor[]);
+    setOrders((ordersData || []) as AdminOrder[]);
 
     const groupedImages = ((imagesData || []) as ProductImage[]).reduce<Record<string, ProductImage[]>>((acc, image) => {
       acc[image.product_id] = [...(acc[image.product_id] || []), image];
@@ -737,6 +771,22 @@ export default function CustomPanel() {
     await loadData();
   };
 
+  const updateOrder = async (
+    orderId: string,
+    changes: Partial<Pick<AdminOrder, 'status' | 'shipping_provider' | 'shipping_service' | 'tracking_number' | 'admin_notes'>>
+  ) => {
+    setSaving(true);
+    setMessage('');
+    const { error } = await supabase
+      .from('orders')
+      .update({ ...changes, updated_at: new Date().toISOString() })
+      .eq('id', orderId);
+
+    setMessage(error ? `No se pudo actualizar el pedido: ${error.message}` : 'Pedido actualizado correctamente.');
+    setSaving(false);
+    if (!error) await loadData();
+  };
+
   const exportDebtorsCsv = () => {
     const rows = debtors.map((debtor) => ({
       estado: debtor.status === 'paid' || debtor.paid_at ? 'Pagado' : 'Pendiente',
@@ -821,8 +871,9 @@ export default function CustomPanel() {
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Productos</p><p className="mt-2 text-3xl font-black text-white">{products.length}</p></div>
+        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Pedidos activos</p><p className="mt-2 text-3xl font-black text-primary">{orders.filter((order) => !['delivered', 'cancelled'].includes(order.status)).length}</p></div>
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Deudores pendientes</p><p className="mt-2 text-3xl font-black text-secondary">{pendingDebtors.length}</p></div>
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Unidades en stock</p><p className="mt-2 text-3xl font-black text-primary">{stats.totalStock}</p></div>
       </div>
@@ -831,6 +882,7 @@ export default function CustomPanel() {
 
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#101010] p-1.5">
         {[
+          ['orders', 'Pedidos'],
           ['products', 'Productos'],
           ['categories', 'Categorias'],
           ['testimonials', 'Reseñas'],
@@ -845,6 +897,95 @@ export default function CustomPanel() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'orders' ? (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-black text-white">Pedidos</h2>
+              <p className="mt-1 text-sm text-white/45">Gestioná la preparación, el envío y la entrega desde acá.</p>
+            </div>
+            <span className="text-sm font-bold text-white/50">{orders.length} pedidos registrados</span>
+          </div>
+
+          {orders.length === 0 ? (
+            <div className={`${panelClass} py-12 text-center`}>
+              <PackageCheck className="mx-auto h-10 w-10 text-primary" />
+              <p className="mt-4 font-bold text-white">Todavía no hay pedidos.</p>
+              <p className="mt-1 text-sm text-white/45">Cuando alguien compre desde el carrito aparecerá automáticamente.</p>
+            </div>
+          ) : null}
+
+          {orders.map((order) => (
+            <form
+              key={order.id}
+              className={panelClass}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = new FormData(event.currentTarget);
+                updateOrder(order.id, {
+                  shipping_provider: String(form.get('shipping_provider') || '').trim() || null,
+                  shipping_service: String(form.get('shipping_service') || '').trim() || null,
+                  tracking_number: String(form.get('tracking_number') || '').trim() || null,
+                  admin_notes: String(form.get('admin_notes') || '').trim() || null,
+                });
+              }}
+            >
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-black text-white">Pedido #{order.id.slice(0, 8).toUpperCase()}</h3>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-bold text-white/60">
+                      {new Date(order.created_at).toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/55">
+                    <span>{order.customer_name || 'Cliente sin nombre'}</span>
+                    <span>{order.customer_phone || 'Teléfono por WhatsApp'}</span>
+                    <span>{order.payment_method || 'Pago a coordinar'}</span>
+                  </div>
+                  <div className="mt-4 divide-y divide-white/[0.06] rounded-lg border border-white/[0.08] bg-black/30">
+                    {(order.order_items || []).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+                        <span className="min-w-0 text-white/75">{item.quantity} × {item.products?.name || 'Producto'}</span>
+                        <span className="shrink-0 font-bold text-white">{formatARS(Math.round(item.price * item.quantity))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-full shrink-0 lg:w-72">
+                  <label className={labelClass}>
+                    Estado
+                    <select
+                      className={fieldClass}
+                      value={order.status}
+                      disabled={saving}
+                      onChange={(event) => updateOrder(order.id, { status: event.target.value as AdminOrder['status'] })}
+                    >
+                      {orderStatuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <p className="mt-3 text-right text-2xl font-black text-primary">{formatARS(Math.round(order.total_price || 0))}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 border-t border-white/[0.08] pt-5 sm:grid-cols-2 lg:grid-cols-4">
+                <label className={labelClass}>Transportista<input name="shipping_provider" defaultValue={order.shipping_provider || ''} className={fieldClass} placeholder="Correo Argentino" /></label>
+                <label className={labelClass}>Servicio<input name="shipping_service" defaultValue={order.shipping_service || ''} className={fieldClass} placeholder="Domicilio" /></label>
+                <label className={labelClass}>Seguimiento<input name="tracking_number" defaultValue={order.tracking_number || ''} className={fieldClass} placeholder="Código de seguimiento" /></label>
+                <label className={labelClass}>Nota interna<input name="admin_notes" defaultValue={order.admin_notes || ''} className={fieldClass} placeholder="Observaciones" /></label>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-50">
+                  <Truck className="h-4 w-4" /> Guardar datos de envío
+                </button>
+              </div>
+            </form>
+          ))}
+        </div>
+      ) : null}
 
       {activeTab === 'products' ? (
         <div className="grid items-start gap-6 lg:grid-cols-[390px_1fr]">

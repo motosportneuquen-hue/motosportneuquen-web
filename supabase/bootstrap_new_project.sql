@@ -91,9 +91,16 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   total_price numeric(12, 2) NOT NULL DEFAULT 0 CHECK (total_price >= 0),
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'cancelled')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled')),
   payment_method text,
   source text NOT NULL DEFAULT 'web',
+  customer_name text,
+  customer_phone text,
+  shipping_provider text,
+  shipping_service text,
+  tracking_number text,
+  admin_notes text,
+  updated_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -306,6 +313,7 @@ CREATE POLICY "Public can view active offers" ON public.offers FOR SELECT TO ano
 CREATE POLICY "Admins manage offers" ON public.offers FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY "Admins manage debtors" ON public.debtors FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY "Users view own orders" ON public.orders FOR SELECT TO authenticated USING (user_id = auth.uid() OR public.is_admin());
+CREATE POLICY "Admins update orders" ON public.orders FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 CREATE POLICY "Users view own order items" ON public.order_items FOR SELECT TO authenticated USING (
   EXISTS (SELECT 1 FROM public.orders WHERE orders.id = order_items.order_id AND (orders.user_id = auth.uid() OR public.is_admin()))
 );
