@@ -40,6 +40,11 @@ export default function Navbar() {
     navigate('/');
   };
 
+  const goToHomeTop = () => {
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  };
+
   if (location.pathname.startsWith('/admin-motosportneu')) {
     return null;
   }
@@ -51,7 +56,7 @@ export default function Navbar() {
       </div>
 
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6 lg:gap-8">
-        <Link to="/" className="flex h-11 w-24 shrink-0 items-center justify-center overflow-hidden" aria-label="Ir al inicio de MotoSport Neuquén">
+        <Link to="/" onClick={goToHomeTop} className="flex h-11 w-24 shrink-0 items-center justify-center overflow-hidden" aria-label="Ir al inicio de MotoSport Neuquén">
           <span className="relative block h-11 w-24">
             <img
               src="/branding/motosport-neuquen-logo.png"
@@ -132,6 +137,7 @@ export default function Navbar() {
             <Link
               key={link.to}
               to={link.to}
+              onClick={link.to === '/' ? goToHomeTop : undefined}
               className={`relative py-2.5 text-[11px] font-bold uppercase tracking-[0.15em] transition ${
                 location.pathname === link.to ? 'text-primary' : 'text-white/70 hover:text-white'
               }`}
@@ -166,7 +172,7 @@ export default function Navbar() {
           </form>
           <div className="grid grid-cols-2 gap-2">
             {links.map((link) => (
-              <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-primary">
+              <Link key={link.to} to={link.to} onClick={link.to === '/' ? goToHomeTop : () => setMobileOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-primary">
                 {link.label}
               </Link>
             ))}

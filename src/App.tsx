@@ -35,6 +35,10 @@ function App() {
   }, [location.pathname]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (!isSupabaseConfigured) {
       checkUser();
       return;
