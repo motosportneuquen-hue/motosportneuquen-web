@@ -184,6 +184,17 @@ const orderStatuses = [
   ['cancelled', 'Cancelado'],
 ] as const;
 
+function adminPaymentLabel(method?: string | null) {
+  const labels: Record<string, string> = {
+    efectivo: 'Efectivo',
+    transferencia: 'Transferencia',
+    mercado_pago: 'Mercado Pago',
+    tarjeta_credito: 'Tarjeta de crédito',
+    tarjeta_debito: 'Tarjeta de débito',
+  };
+  return method ? labels[method] || method : 'Pago a coordinar';
+}
+
 function splitList(value: string) {
   return value
     .split(/[\n,]/)
@@ -1215,7 +1226,7 @@ export default function CustomPanel() {
                     <span>{order.customer_name || 'Cliente sin nombre'}</span>
                     <span>{order.customer_phone || 'Teléfono por WhatsApp'}</span>
                     {order.customer_email ? <span>{order.customer_email}</span> : null}
-                    <span>{order.payment_method || 'Pago a coordinar'}</span>
+                    <span>{adminPaymentLabel(order.payment_method)}</span>
                   </div>
                   <div className="mt-4 grid gap-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-4 text-sm sm:grid-cols-2">
                     <div>

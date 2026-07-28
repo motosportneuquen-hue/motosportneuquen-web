@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
-type PaymentMethod = 'efectivo' | 'transferencia';
+type PaymentMethod = 'efectivo' | 'transferencia' | 'mercado_pago' | 'tarjeta_credito' | 'tarjeta_debito';
 type BuyerData = {
   name: string;
   phone: string;
@@ -34,6 +34,12 @@ function paymentLabel(method: PaymentMethod) {
       return 'Efectivo';
     case 'transferencia':
       return 'Transferencia';
+    case 'mercado_pago':
+      return 'Mercado Pago';
+    case 'tarjeta_credito':
+      return 'Tarjeta de crédito';
+    case 'tarjeta_debito':
+      return 'Tarjeta de débito';
     default:
       return method;
   }
@@ -437,7 +443,11 @@ export default function Cart() {
               >
                 <option value="transferencia">Transferencia</option>
                 <option value="efectivo">Efectivo</option>
+                <option value="mercado_pago">Mercado Pago</option>
+                <option value="tarjeta_credito">Tarjeta de crédito</option>
+                <option value="tarjeta_debito">Tarjeta de débito</option>
               </select>
+              <p className="mt-2 text-xs text-gray-400">El pago se coordina por WhatsApp. La web no solicita ni almacena datos de la tarjeta.</p>
             </div>
 
             <button
