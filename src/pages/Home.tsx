@@ -48,7 +48,7 @@ export default function Home() {
             <div className="absolute h-[94%] w-[94%] rounded-full border border-secondary/20" />
             <div className="absolute left-[6%] top-[15%] h-3 w-3 rounded-full bg-primary shadow-[0_0_24px_#55e600]" />
             <div className="absolute bottom-[10%] right-[10%] h-4 w-4 rounded-full bg-secondary shadow-[0_0_26px_#b900e6]" />
-            <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="relative z-10 w-[88%] drop-shadow-[0_28px_65px_rgba(0,0,0,0.8)]" />
+            <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="relative z-10 w-[88%] mix-blend-screen drop-shadow-[0_28px_65px_rgba(0,0,0,0.8)]" />
           </div>
         </div>
       </section>
