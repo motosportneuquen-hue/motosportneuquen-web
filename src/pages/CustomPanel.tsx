@@ -863,7 +863,7 @@ export default function CustomPanel() {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">MotoSport Neuquén</p>
           <h1 className="mt-2 text-3xl font-black text-white md:text-4xl">Administración</h1>
-          <p className="mt-2 text-sm text-white/45">Productos, categorías, reseñas y cuentas en un solo lugar.</p>
+          <p className="mt-2 text-sm text-white/45">Pedidos, productos y categorías en un solo lugar.</p>
         </div>
         <button onClick={loadData} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white transition hover:border-primary/40">
           <RefreshCw className="h-4 w-4" />
@@ -871,10 +871,9 @@ export default function CustomPanel() {
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Productos</p><p className="mt-2 text-3xl font-black text-white">{products.length}</p></div>
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Pedidos activos</p><p className="mt-2 text-3xl font-black text-primary">{orders.filter((order) => !['delivered', 'cancelled'].includes(order.status)).length}</p></div>
-        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Deudores pendientes</p><p className="mt-2 text-3xl font-black text-secondary">{pendingDebtors.length}</p></div>
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Unidades en stock</p><p className="mt-2 text-3xl font-black text-primary">{stats.totalStock}</p></div>
       </div>
 
@@ -885,8 +884,6 @@ export default function CustomPanel() {
           ['orders', 'Pedidos'],
           ['products', 'Productos'],
           ['categories', 'Categorias'],
-          ['testimonials', 'Reseñas'],
-          ['debtors', 'Deudores'],
         ].map(([id, label]) => (
           <button
             key={id}
