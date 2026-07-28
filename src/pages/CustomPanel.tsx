@@ -1725,17 +1725,20 @@ export default function CustomPanel() {
       ) : null}
 
       {activeTab === 'products' ? (
-        <div className="grid items-start gap-6 lg:grid-cols-[390px_1fr]">
-          <form onSubmit={saveProduct} className={`${panelClass} space-y-3`}>
-            <h2 className="text-xl font-bold text-white">{productForm.id ? 'Editar producto' : 'Nuevo producto'}</h2>
+        <div className="grid items-start gap-8 xl:grid-cols-[minmax(560px,0.95fr)_minmax(0,1.35fr)]">
+          <form onSubmit={saveProduct} className={`${panelClass} space-y-5 p-6 lg:p-7`}>
+            <div className="border-b border-white/[0.08] pb-4">
+              <h2 className="text-2xl font-black text-white">{productForm.id ? 'Editar producto' : 'Nuevo producto'}</h2>
+              <p className="mt-1 text-sm text-white/40">Completá los datos principales, precios, imágenes y medidas del producto.</p>
+            </div>
             <label className={labelClass}>Nombre<input required className={fieldClass} value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} /></label>
-            <label className={labelClass}>Descripcion<textarea required className={`${fieldClass} min-h-24`} value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} /></label>
-            <div className="grid grid-cols-2 gap-3">
+            <label className={labelClass}>Descripcion<textarea required className={`${fieldClass} min-h-32`} value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} /></label>
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className={labelClass}>Precio normal ARS (opcional)<input type="number" min="0" placeholder="Dejá vacío para consultar" className={fieldClass} value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} /></label>
               <label className={labelClass}>Precio por transferencia ARS (opcional)<input type="number" min="0" placeholder="Ej: 85000" className={fieldClass} value={productForm.transfer_price} onChange={(e) => setProductForm({ ...productForm, transfer_price: e.target.value })} /></label>
               <label className={labelClass}>Stock<input required type="number" min="0" className={fieldClass} value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} /></label>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className={labelClass}>
                 Categoria
                 <select required className={fieldClass} value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
@@ -1770,10 +1773,10 @@ export default function CustomPanel() {
               />
             </label>
             <label className={labelClass}>Colores separados por coma<input className={fieldClass} value={productForm.colors} onChange={(e) => setProductForm({ ...productForm, colors: e.target.value })} /></label>
-            <fieldset className="rounded-xl border border-primary/25 bg-primary/[0.04] p-4">
+            <fieldset className="rounded-xl border border-primary/25 bg-primary/[0.04] p-5">
               <legend className="px-2 text-sm font-black uppercase tracking-wider text-primary">Datos para calcular el envío</legend>
               <p className="mb-4 text-xs leading-relaxed text-gray-300">Medí el producto ya embalado. Correo Argentino y Andreani usan estos datos para calcular el precio.</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2">
                 <label className={labelClass}>Peso en gramos<input required type="number" min="1" className={fieldClass} value={productForm.weight_grams} onChange={(e) => setProductForm({ ...productForm, weight_grams: e.target.value })} /></label>
                 <label className={labelClass}>Largo en cm<input required type="number" min="1" step="0.1" className={fieldClass} value={productForm.length_cm} onChange={(e) => setProductForm({ ...productForm, length_cm: e.target.value })} /></label>
                 <label className={labelClass}>Ancho en cm<input required type="number" min="1" step="0.1" className={fieldClass} value={productForm.width_cm} onChange={(e) => setProductForm({ ...productForm, width_cm: e.target.value })} /></label>
@@ -1803,12 +1806,12 @@ export default function CustomPanel() {
                 placeholder="Pega URLs o imagenes. Para color: Rojo - https://..."
               />
             </label>
-            <div className="flex gap-2">
-              <button disabled={saving || uploading} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-60">
+            <div className="flex flex-col gap-3 border-t border-white/[0.08] pt-5 sm:flex-row">
+              <button disabled={saving || uploading} className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-black text-black disabled:opacity-60">
                 <Save className="h-4 w-4" />
                 {uploading ? 'Subiendo...' : 'Guardar'}
               </button>
-              <button type="button" onClick={() => setProductForm(emptyProduct)} className="rounded-md border border-white/20 px-4 py-2 text-gray-200">Limpiar</button>
+              <button type="button" onClick={() => setProductForm(emptyProduct)} className="min-h-12 rounded-lg border border-white/20 px-6 py-3 font-bold text-gray-200">Limpiar</button>
             </div>
           </form>
 
