@@ -53,7 +53,7 @@ export default function Navbar() {
             <img
               src="/branding/motosport-neuquen-logo.png"
               alt="MotoSport Neuquén"
-              className="absolute -top-[18px] left-1/2 w-24 max-w-none -translate-x-1/2 sm:-top-[27px] sm:w-36"
+              className="absolute -top-[18px] left-1/2 w-24 max-w-none -translate-x-1/2 sm:-top-[22px] sm:w-28"
             />
           </span>
         </Link>
