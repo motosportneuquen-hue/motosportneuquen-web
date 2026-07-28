@@ -41,6 +41,10 @@ export default function Navbar() {
     navigate('/');
   };
 
+  if (location.pathname.startsWith('/admin-motosportneu')) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#080808]/95 text-white backdrop-blur-xl">
       <div className="bg-primary px-4 py-1.5 text-center text-[10px] font-black uppercase tracking-[0.18em] text-black sm:text-[11px]">
