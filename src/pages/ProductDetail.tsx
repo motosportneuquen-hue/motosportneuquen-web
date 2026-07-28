@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Star, ArrowLeft, Info, Package, Truck, Shield } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Info, Package, Truck, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
-import { Product, Review } from '../types/supabase';
+import { Product } from '../types/supabase';
 import ProductGallery from '../components/ProductGallery';
 import { formatProductPrice } from '../lib/currency';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
-  const [reviews, setResenas] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [relatedProductos, setRelatedProductos] = useState<Product[]>([]);
@@ -38,26 +37,6 @@ export default function ProductDetail() {
         console.error('Error fetching product:', productError);
       } else if (productData) {
         setProduct(productData);
-        
-        // Fetch reviews for this product
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from('reviews')
-          .select(`
-            id,
-            product_id,
-            user_id,
-            rating,
-            comment,
-            created_at
-          `)
-          .eq('product_id', id)
-          .order('created_at', { ascending: false });
-
-        if (reviewsError) {
-          console.error('Error fetching reviews:', reviewsError);
-        } else {
-          setResenas(reviewsData || []);
-        }
         
         // Fetch related products in the same category
         if (productData.category) {
@@ -178,25 +157,6 @@ export default function ProductDetail() {
           <h1 className="break-words text-2xl font-bold text-white sm:text-3xl">
             {product.name}
           </h1>
-          
-          <div className="flex items-center mb-4">
-            {/* Average Rating */}
-            <div className="flex items-center">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`h-5 w-5 ${
-                    star <= (reviews.reduce((acc, review) => acc + review.rating, 0) / Math.max(reviews.length, 1))
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="ml-2 text-gray-600 dark:text-gray-300">
-              ({reviews.length} {reviews.length === 1 ? 'reseña' : 'reseñas'})
-            </span>
-          </div>
           
           <p className="mb-4 break-words text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.35)] sm:text-3xl">
             {formatProductPrice(Math.round(product.price))}

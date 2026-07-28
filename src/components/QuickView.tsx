@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, memo } from 'react';
-import { ChevronLeft, ChevronRight, X, ShoppingCart, Star, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { Product, ProductImage } from '../types/supabase';
 import { useCartStore } from '../store/cartStore';
 import { formatProductPrice } from '../lib/currency';
@@ -174,20 +174,6 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               {product.name}
             </h2>
-            
-            <div className="flex items-center mb-4">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className="h-5 w-5 text-yellow-400 fill-current"
-                  />
-                ))}
-              </div>
-              <span className="ml-2 text-gray-600 dark:text-gray-300">
-                (24 reviews)
-              </span>
-            </div>
             
             <p className="text-2xl font-black text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] mb-4">
               {formatProductPrice(Math.round(product.price))}
