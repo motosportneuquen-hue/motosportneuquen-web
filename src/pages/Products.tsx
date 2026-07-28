@@ -101,7 +101,7 @@ export default function ProductsPage() {
       console.error(error);
     } else {
       const normalizedSearch = searchQuery.toLocaleLowerCase('es');
-      const matchingDemoProducts = demoProducts.filter((product) => {
+      const matchingDemoProducts = (data || []).length > 0 ? [] : demoProducts.filter((product) => {
         const matchesCategory = !selectedCategory || product.category === selectedCategory;
         const matchesModel = !selectedModel || product.motorcycle_model === selectedModel;
         const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
