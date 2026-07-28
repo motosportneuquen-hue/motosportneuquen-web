@@ -1,5 +1,6 @@
 ﻿import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppFloat from './components/WhatsAppFloat';
@@ -23,6 +24,8 @@ import CustomPanel from './pages/CustomPanel';
 import AdminGuard from './components/AdminGuard';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import './styles/animations.css';
+
+const BikeBuilder = lazy(() => import('./pages/BikeBuilder'));
 
 function App() {
   const { checkUser } = useAuthStore();
@@ -75,6 +78,14 @@ function App() {
           <Route path="/offers" element={<Offers />} />
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetail />} />
+          <Route
+            path="/armar-moto"
+            element={(
+              <Suspense fallback={<div className="container flex min-h-[60vh] items-center justify-center text-white/50">Preparando configurador 3D...</div>}>
+                <BikeBuilder />
+              </Suspense>
+            )}
+          />
           <Route path="/cart" element={<Cart />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
