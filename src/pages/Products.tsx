@@ -123,8 +123,12 @@ export default function ProductsPage() {
         supabase.from('motorcycle_models').select('name').eq('activo', true).order('orden', { ascending: true }),
       ]);
 
-      const usedCategories = new Set((productCategories || []).map((item) => item.category));
-      setCategories([...new Set((categoryData || []).map((item) => item.name))].filter((category) => usedCategories.has(category)));
+      const allCategories = [
+        ...(categoryData || []).map((item) => item.name),
+        ...(productCategories || []).map((item) => item.category),
+        ...demoProducts.map((product) => product.category),
+      ].filter(Boolean);
+      setCategories([...new Set(allCategories)]);
       if (modelData?.length) setMotoModels(modelData.map((model) => model.name));
 
       if (prices?.length) {
