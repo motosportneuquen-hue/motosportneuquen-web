@@ -2,6 +2,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Mail, Lock, LogIn, UserPlus, User as UserIcon } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -14,6 +15,30 @@ export default function Auth() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const sendMagicLink = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    setAuthError(null);
+    setSuccessMessage(null);
+    if (!normalizedEmail) {
+      setAuthError('Ingresá tu correo electrónico.');
+      return;
+    }
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
+    });
+    setIsSubmitting(false);
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+    setSuccessMessage('Te enviamos un enlace de acceso. Revisá tu correo y abrilo desde este dispositivo.');
+  };
   
   // Get redirect information from location state
   const from = location.state?.from || '/';
@@ -188,6 +213,25 @@ export default function Auth() {
             )}
           </button>
         </form>
+
+        {!isSignUp ? (
+          <div className="mt-4">
+            <div className="mb-4 flex items-center gap-3 text-xs text-gray-400">
+              <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+              <span>o ingresá sin contraseña</span>
+              <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+            </div>
+            <button
+              type="button"
+              onClick={sendMagicLink}
+              disabled={isSubmitting || !email.trim()}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/50 px-4 font-bold text-primary transition hover:bg-primary hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Mail className="h-5 w-5" />
+              Enviarme un enlace de acceso
+            </button>
+          </div>
+        ) : null}
         
         <div className="mt-6 text-center">
           <button
