@@ -319,6 +319,8 @@ export default function CustomPanel() {
   const [offerProductId, setOfferProductId] = useState('');
   const [offerPercent, setOfferPercent] = useState('10');
   const [offerTitle, setOfferTitle] = useState('Oferta especial');
+  const [offerProductSearch, setOfferProductSearch] = useState('');
+  const [offerCategoryFilter, setOfferCategoryFilter] = useState('');
   const [productImages, setProductImages] = useState<Record<string, ProductImage[]>>({});
   const [productForm, setProductForm] = useState<ProductForm>(emptyProduct);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(emptyCategory);
@@ -354,6 +356,16 @@ export default function CustomPanel() {
       normalizeMatch(`${product.name} ${product.category} ${product.motorcycle_model || ''} ${product.description || ''}`).includes(search)
     );
   }, [productSearch, sortedProducts]);
+
+  const offerProductOptions = useMemo(() => {
+    const search = normalizeMatch(offerProductSearch);
+    return sortedProducts.filter((product) => {
+      const matchesPrice = product.price > 0;
+      const matchesCategory = !offerCategoryFilter || product.category === offerCategoryFilter;
+      const matchesSearch = !search || normalizeMatch(`${product.name} ${product.category} ${product.motorcycle_model || ''}`).includes(search);
+      return matchesPrice && matchesCategory && matchesSearch;
+    });
+  }, [offerCategoryFilter, offerProductSearch, sortedProducts]);
 
   const pendingDebtors = useMemo(
     () => debtors.filter((debtor) => debtor.status !== 'paid' && !debtor.paid_at),
@@ -1002,10 +1014,39 @@ export default function CustomPanel() {
               <p className="mt-1 text-sm text-white/45">El precio original no se modifica.</p>
             </div>
             <label className={labelClass}>
+              Buscar producto
+              <div className="relative">
+                <input
+                  value={offerProductSearch}
+                  onChange={(event) => {
+                    setOfferProductSearch(event.target.value);
+                    setOfferProductId('');
+                  }}
+                  className={`${fieldClass} pr-10`}
+                  placeholder="Nombre, modelo o categoría"
+                />
+                <Search className="absolute right-3 top-1/2 mt-0.5 h-4 w-4 -translate-y-1/2 text-white/35" />
+              </div>
+            </label>
+            <label className={labelClass}>
+              Filtrar por categoría
+              <select
+                value={offerCategoryFilter}
+                onChange={(event) => {
+                  setOfferCategoryFilter(event.target.value);
+                  setOfferProductId('');
+                }}
+                className={fieldClass}
+              >
+                <option value="">Todas las categorías</option>
+                {sortedCategories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
+              </select>
+            </label>
+            <label className={labelClass}>
               Producto
               <select required value={offerProductId} onChange={(event) => setOfferProductId(event.target.value)} className={fieldClass}>
-                <option value="">Seleccionar producto</option>
-                {products.filter((product) => product.price > 0).map((product) => (
+                <option value="">{offerProductOptions.length ? `Seleccionar entre ${offerProductOptions.length} productos` : 'No hay productos con esos filtros'}</option>
+                {offerProductOptions.map((product) => (
                   <option key={product.id} value={product.id}>{product.name} · {formatARS(Math.round(product.price))}</option>
                 ))}
               </select>
