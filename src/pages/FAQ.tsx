@@ -34,7 +34,7 @@ export default function FAQ() {
             );
           })}
         </div>
-        <a href="https://wa.me/5403534099785" target="_blank" rel="noopener noreferrer" className="mt-7 flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-black hover:bg-purple-700">
+        <a href="https://wa.me/5492995343094" target="_blank" rel="noopener noreferrer" className="mt-7 flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-black hover:bg-purple-700">
           <MessageCircle className="h-5 w-5" /> Hacer otra consulta
         </a>
       </div>

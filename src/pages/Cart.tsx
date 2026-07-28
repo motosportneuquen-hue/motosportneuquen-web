@@ -16,7 +16,7 @@ type ShippingQuote = {
   deliveryDaysMax?: number;
 };
 
-const WHATSAPP_PHONE = '5403534099785';
+const WHATSAPP_PHONE = '5492995343094';
 
 function paymentLabel(method: PaymentMethod) {
   switch (method) {

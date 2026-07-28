@@ -1,8 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { Instagram, MessageCircle, Send } from 'lucide-react';
 
-const WHATSAPP_PHONE = '5403534099785';
-const INSTAGRAM_URL = 'https://www.instagram.com/speedyrepuestos/';
+const WHATSAPP_PHONE = '5492995343094';
+const INSTAGRAM_URL = 'https://www.instagram.com/motosportneuquen/';
 
 export default function Contact() {
   const [name, setName] = useState('');
@@ -35,7 +35,7 @@ export default function Contact() {
               className="flex items-center gap-3 rounded-xl border border-purple-800/70 bg-black p-4 hover:bg-purple-950/40"
             >
               <MessageCircle className="h-6 w-6 text-purple-400" />
-              <span><strong>WhatsApp</strong><br /><small className="text-gray-300">Atencion y pedidos</small></span>
+              <span><strong>WhatsApp</strong><br /><small className="text-gray-300">+54 9 299 534-3094</small></span>
             </a>
             <a
               href={INSTAGRAM_URL}
@@ -44,7 +44,7 @@ export default function Contact() {
               className="flex items-center gap-3 rounded-xl border border-white/15 bg-black p-4 hover:bg-white/5"
             >
               <Instagram className="h-6 w-6 text-purple-400" />
-              <span><strong>@speedyrepuestos</strong><br /><small className="text-gray-300">Novedades e ingresos</small></span>
+              <span><strong>@motosportneuquen</strong><br /><small className="text-gray-300">Novedades e ingresos</small></span>
             </a>
             <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300">
               Realizamos envios a todo el pais. El costo, el medio y el plazo se coordinan antes de confirmar.

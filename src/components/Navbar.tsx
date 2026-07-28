@@ -4,8 +4,8 @@ import { LogOut, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 
-const INSTAGRAM_URL = 'https://www.instagram.com/speedyrepuestos/';
-const WHATSAPP_URL = 'https://wa.me/5403534099785?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20quiero%20consultar%20por%20productos.';
+const INSTAGRAM_URL = 'https://www.instagram.com/motosportneuquen/';
+const WHATSAPP_URL = 'https://wa.me/5492995343094?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20quiero%20consultar%20por%20productos.';
 
 const links = [
   { label: 'Inicio', to: '/' },

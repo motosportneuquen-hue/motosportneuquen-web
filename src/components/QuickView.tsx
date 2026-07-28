@@ -89,7 +89,7 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
   const handleAddToCart = () => {
     if (isOnRequest) {
       const message = `Hola MotoSport Neuquén, quiero consultar por ${product.name}. Modelo de moto: _____. Color: ${selectedColor || '_____'}.`;
-      window.open(`https://wa.me/5403534099785?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+      window.open(`https://wa.me/5492995343094?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
       onClose();
       return;
     }

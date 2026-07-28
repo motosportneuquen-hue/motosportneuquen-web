@@ -27,7 +27,7 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
     event.stopPropagation();
     if (isOnRequest) {
       const message = `Hola MotoSport Neuquén, quiero consultar por ${product.name}. Modelo de moto: _____.`;
-      window.open(`https://wa.me/5403534099785?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+      window.open(`https://wa.me/5492995343094?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
       return;
     }
     const existingItem = cartItems.find((item: { product_id: string }) => item.product_id === product.id);

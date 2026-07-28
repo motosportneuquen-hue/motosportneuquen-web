@@ -22,7 +22,7 @@ export default function Returns() {
             </article>
           ))}
         </div>
-        <a href="https://wa.me/5403534099785?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20tengo%20una%20consulta%20sobre%20un%20pedido." target="_blank" rel="noopener noreferrer" className="mt-7 flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-black hover:bg-purple-700">
+        <a href="https://wa.me/5492995343094?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20tengo%20una%20consulta%20sobre%20un%20pedido." target="_blank" rel="noopener noreferrer" className="mt-7 flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-black hover:bg-purple-700">
           <MessageCircle className="h-5 w-5" /> Consultar por WhatsApp
         </a>
         <p className="mt-5 text-xs text-gray-400">Este procedimiento no limita los derechos que correspondan conforme a la normativa aplicable.</p>

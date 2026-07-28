@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { MessageCircle, PackageSearch } from 'lucide-react';
 
-const WHATSAPP_PHONE = '5403534099785';
+const WHATSAPP_PHONE = '5492995343094';
 
 export default function OrderTracking() {
   const [orderNumber, setOrderNumber] = useState('');

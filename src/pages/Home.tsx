@@ -108,7 +108,7 @@ export default function Home() {
             <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">¿No sabés cuál elegir?</p>
             <h2 className="mt-3 text-3xl font-black uppercase text-white sm:text-5xl">Te ayudamos a encontrar el repuesto correcto.</h2>
           </div>
-          <a href="https://wa.me/5403534099785?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20necesito%20asesoramiento." target="_blank" rel="noreferrer" className="relative mt-8 inline-flex min-h-13 items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-black uppercase text-black transition hover:bg-primary lg:mt-0">
+          <a href="https://wa.me/5492995343094?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20necesito%20asesoramiento." target="_blank" rel="noreferrer" className="relative mt-8 inline-flex min-h-13 items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-black uppercase text-black transition hover:bg-primary lg:mt-0">
             Hablar por WhatsApp
           </a>
         </div>
