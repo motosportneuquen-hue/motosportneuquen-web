@@ -48,12 +48,12 @@ export default function Navbar() {
       </div>
 
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 lg:gap-8 lg:py-4">
-        <Link to="/" className="shrink-0" aria-label="Ir al inicio de MotoSport Neuquén">
-          <span className="relative block h-14 w-28 sm:h-16 sm:w-36">
+        <Link to="/" className="flex h-12 w-24 shrink-0 items-center justify-center" aria-label="Ir al inicio de MotoSport Neuquén">
+          <span className="relative block h-12 w-24">
             <img
               src="/branding/motosport-neuquen-logo.png"
               alt="MotoSport Neuquén"
-              className="absolute -top-[21px] left-1/2 w-28 max-w-none -translate-x-1/2 sm:-top-6 sm:w-32"
+              className="absolute -top-[18px] left-1/2 w-24 max-w-none -translate-x-1/2 mix-blend-screen"
             />
           </span>
         </Link>
