@@ -26,7 +26,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       <section className="container py-10">
         <div className="rounded-lg border border-white/30 bg-black/60 p-4 text-gray-200 backdrop-blur-sm">
           <h1 className="font-brand text-3xl text-white">Acceso denegado</h1>
-          <p className="mt-3">Este panel es solo para administradores de Speedy Repuestos.</p>
+          <p className="mt-3">Este panel es solo para administradores de MotoSport Neuquén.</p>
           <Link to="/" className="mt-5 inline-flex rounded-md bg-white px-4 py-2 font-bold text-black">
             Volver al inicio
           </Link>

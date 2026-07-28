@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
 
         <p className="mt-8 border-t border-white/10 pt-6 text-gray-200">
           Para hacer una consulta, usa nuestra pagina de{' '}
-          <Link to="/contact" className="font-bold text-red-400 hover:text-red-300">contacto</Link>.
+          <Link to="/contact" className="font-bold text-purple-400 hover:text-purple-300">contacto</Link>.
         </p>
       </div>
     </section>

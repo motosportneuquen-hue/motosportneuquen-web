@@ -87,8 +87,8 @@ export default function Auth() {
         )}
         
         {authError && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-800 dark:text-red-200">{authError}</p>
+          <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-6">
+            <p className="text-purple-800 dark:text-purple-200">{authError}</p>
           </div>
         )}
 

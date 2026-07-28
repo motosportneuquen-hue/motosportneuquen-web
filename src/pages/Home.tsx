@@ -1,244 +1,118 @@
+import { ArrowRight, ChevronRight, Headphones, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
 import FeaturedProducts from '../components/FeaturedProducts';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { Product, Testimonial } from '../types/supabase';
-import ProductCard from '../components/ProductCard';
-import { useCartStore } from '../store/cartStore';
 
-const DEFAULT_REVIEW_AVATAR = '/branding/avatar-placeholder.svg';
+const categories = [
+  { name: 'Repuestos', copy: 'Todo para mantener tu moto siempre lista.' },
+  { name: 'Accesorios', copy: 'Detalles que cambian tu forma de rodar.' },
+  { name: 'Cascos e indumentaria', copy: 'Protección y estilo para cada salida.' },
+  { name: 'Cubiertas y cámaras', copy: 'Agarre y seguridad para cada terreno.' },
+];
 
-type ClientReview = {
-  nombre: string;
-  mensaje: string;
-  foto: string;
-};
+const benefits = [
+  { icon: Truck, title: 'Envíos nacionales', text: 'Llegamos a todo el país.' },
+  { icon: Headphones, title: 'Asesoramiento real', text: 'Te ayudamos a elegir bien.' },
+  { icon: ShieldCheck, title: 'Compra segura', text: 'Confirmamos cada pedido.' },
+  { icon: PackageCheck, title: 'Stock actualizado', text: 'Información clara y directa.' },
+];
 
 export default function Home() {
-  const [clientReviews, setClientReviews] = useState<ClientReview[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [allCategories, setAllCategories] = useState<string[]>([]);
-  const addItem = useCartStore((state) => state.addItem);
-
-  useEffect(() => {
-    async function loadReviews() {
-      if (isSupabaseConfigured) {
-        const { data, error } = await supabase
-          .from('testimonials')
-          .select('*')
-          .eq('activo', true)
-          .order('orden', { ascending: true })
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          const normalized = (data as Testimonial[]).map((item) => ({
-            nombre: item.nombre,
-            mensaje: item.mensaje,
-            foto: item.foto_url || DEFAULT_REVIEW_AVATAR,
-          }));
-          setClientReviews(normalized);
-          return;
-        }
-      }
-
-      try {
-        const response = await fetch('/testimonials.json');
-        if (!response.ok) throw new Error('No se pudo cargar testimonials.json');
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setClientReviews(data);
-          return;
-        }
-      } catch (error) {
-        console.error('Error cargando reseñas de clientes:', error);
-      }
-
-      setClientReviews([
-        {
-          nombre: 'Cliente Speedy Repuestos',
-          mensaje: 'Excelente atencion, me ayudaron a elegir justo lo que necesitaba.',
-          foto: DEFAULT_REVIEW_AVATAR,
-        },
-      ]);
-    }
-
-    loadReviews();
-  }, []);
-
-  useEffect(() => {
-    async function loadCatalog() {
-      if (!isSupabaseConfigured) return;
-
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!productsError && productsData) {
-        setAllProducts(productsData as Product[]);
-      }
-
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('name')
-        .order('orden', { ascending: true })
-        .order('created_at', { ascending: false });
-
-      if (!categoriesError && categoriesData) {
-        setAllCategories(categoriesData.map((c: { name: string }) => c.name));
-      }
-    }
-
-    loadCatalog();
-  }, []);
-
-  const groupedProducts = useMemo(() => {
-    const group = new Map<string, Product[]>();
-    allProducts.forEach((product) => {
-      const list = group.get(product.category) || [];
-      list.push(product);
-      group.set(product.category, list);
-    });
-
-    const orderedCategories = allCategories.length > 0
-      ? allCategories
-      : Array.from(group.keys());
-
-    return orderedCategories
-      .map((category) => ({
-        category,
-        products: [...(group.get(category) || [])].sort((a, b) =>
-          a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-        ),
-      }))
-      .filter((block) => block.products.length > 0);
-  }, [allProducts, allCategories]);
-
-  const categoriesWithProducts = groupedProducts.map((block) => block.category);
-
   return (
-    <section className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
-      <div className="relative overflow-hidden rounded-md border border-red-900/70 bg-black shadow-[0_0_36px_rgba(127,29,29,0.24)]">
-        <div className="p-2 sm:p-4 md:p-6">
-          <div className="mb-4 rounded-2xl border border-red-600/80 bg-gradient-to-r from-red-950 via-red-700 to-red-600 px-4 py-3 text-center shadow-[0_0_28px_rgba(220,38,38,0.35)] md:px-6 md:py-4">
-            <p className="text-sm font-black uppercase tracking-[0.14em] text-white sm:text-lg sm:tracking-[0.22em] md:text-2xl md:tracking-[0.28em]">
-              Envios a todo el pais
+    <div className="pb-20">
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_45%,rgba(185,0,230,0.16),transparent_32%),radial-gradient(circle_at_12%_5%,rgba(85,230,0,0.10),transparent_28%)]" />
+        <div className="relative mx-auto grid min-h-[590px] max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+          <div className="max-w-2xl">
+            <p className="mb-5 flex items-center gap-3 text-xs font-black uppercase tracking-[0.25em] text-primary">
+              <span className="h-px w-10 bg-primary" /> Moto repuestos en Neuquén
             </p>
-          </div>
-
-          <Link
-            to="/products"
-            className="block overflow-hidden rounded-3xl border border-red-900/70 bg-zinc-950"
-            aria-label="Ver productos Speedy Repuestos"
-          >
-            <img
-              src="/branding/speedy-logo-final.png"
-              alt="Speedy Repuestos para motos"
-              className="h-[180px] w-full bg-black p-3 object-contain sm:h-[260px] sm:p-4 md:h-[420px] lg:h-[520px]"
-            />
-          </Link>
-
-          <div className="mt-8 overflow-hidden">
-            <p className="text-center text-xs font-medium uppercase tracking-widest text-white/45">
-              Opiniones de muestra para visualizar el catalogo
+            <h1 className="text-balance text-5xl font-black uppercase leading-[0.92] tracking-[-0.04em] text-white sm:text-6xl lg:text-8xl">
+              Tu moto.
+              <span className="block text-primary">A tu manera.</span>
+            </h1>
+            <p className="mt-7 max-w-xl text-base leading-relaxed text-white/60 sm:text-lg">
+              Repuestos, accesorios e indumentaria seleccionados para que encuentres lo correcto sin perder tiempo.
             </p>
-            <div className="reviews-ticker-track flex items-center py-2">
-              {[...clientReviews, ...clientReviews].map((review, index) => (
-                <article
-                  key={`${review.nombre}-${index}`}
-                  className="review-ribbon-card mx-2 flex min-h-24 w-56 shrink-0 items-center justify-center px-4 py-3 text-center sm:mx-3 sm:w-64 sm:px-5 sm:py-4 md:w-72"
-                >
-                  <div>
-                    <p className="text-sm font-black uppercase text-white">{review.nombre}</p>
-                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-white/90">{review.mensaje}</p>
-                  </div>
-                </article>
-              ))}
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link to="/products" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-black uppercase tracking-wider text-black transition hover:-translate-y-0.5 hover:bg-lime-300">
+                Ver catálogo <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/contact" className="inline-flex min-h-13 items-center justify-center rounded-full border border-white/15 px-7 py-3.5 text-sm font-black uppercase tracking-wider text-white transition hover:border-secondary hover:bg-secondary/10">
+                Pedir asesoramiento
+              </Link>
             </div>
           </div>
+
+          <div className="relative mx-auto flex aspect-square w-full max-w-[500px] items-center justify-center">
+            <div className="absolute h-[76%] w-[76%] rounded-full border border-primary/20 bg-primary/[0.04]" />
+            <div className="absolute h-[94%] w-[94%] rounded-full border border-secondary/20" />
+            <div className="absolute left-[6%] top-[15%] h-3 w-3 rounded-full bg-primary shadow-[0_0_24px_#55e600]" />
+            <div className="absolute bottom-[10%] right-[10%] h-4 w-4 rounded-full bg-secondary shadow-[0_0_26px_#b900e6]" />
+            <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="relative z-10 w-[88%] drop-shadow-[0_28px_65px_rgba(0,0,0,0.8)]" />
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="mt-10 sm:mt-16">
-        <FeaturedProducts />
-      </div>
-
-      <div className="mt-10 w-full sm:mt-16">
-        <h2 className="font-brand mb-5 text-2xl font-bold text-white sm:mb-8 sm:text-3xl">Todas las categorias</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-          {(categoriesWithProducts.length > 0
-            ? categoriesWithProducts
-            : [
-              'Repuestos',
-              'Accesorios',
-              'Cascos e indumentaria',
-              'Cubiertas y cámaras',
-              'Aceites y lubricantes',
-              'Transmisión',
-              'Frenos',
-              'Electricidad',
-              'Estética y tuning',
-            ]
-          ).map((categoria) => (
-            <Link
-              key={categoria}
-              to={`/products?category=${encodeURIComponent(categoria)}`}
-              className="font-brand rounded-md border border-red-900/60 bg-zinc-950 px-4 py-3 text-center font-semibold text-white transition-colors hover:border-red-500 hover:bg-red-950 hover:text-red-100"
-            >
-              {categoria}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-10 w-full sm:mt-16">
-        <h2 className="font-brand mb-5 text-2xl font-bold text-white sm:mb-8 sm:text-3xl">Productos por categoria</h2>
-        <div className="space-y-10">
-          {groupedProducts.map((block) => (
-            <div key={block.category}>
-              <h3 className="font-brand mb-4 text-xl text-white md:text-2xl">{block.category}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {block.products.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/products/${product.id}`}
-                    className="block h-full"
-                  >
-                    <ProductCard product={product} onAddToCart={addItem} />
-                  </Link>
-                ))}
+      <section className="border-b border-white/10 bg-white/[0.025]">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-white/10 px-4 sm:grid-cols-4 sm:divide-y-0">
+          {benefits.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex gap-3 px-3 py-6 sm:px-5">
+              <Icon className="h-6 w-6 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-black text-white">{title}</p>
+                <p className="mt-1 text-xs text-white/45">{text}</p>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="mt-10 w-full sm:mt-16">
-        <div className="mx-auto max-w-3xl rounded-xl border border-white/10 bg-zinc-950 p-4 text-center shadow-sm sm:p-6 md:p-8">
-          <p className="text-sm font-black uppercase tracking-[0.24em] text-red-300">Envios a todo el pais</p>
-          <p className="mt-3 text-2xl font-black tracking-wide text-white">Contacto por WhatsApp</p>
-          <p className="mt-3 text-gray-200">@speedyrepuestos</p>
-          <p className="mt-2 text-gray-300">Seguinos para novedades, ingresos y promos.</p>
-          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="https://www.instagram.com/speedyrepuestos/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-red-800/70 px-6 py-3 font-bold text-white transition-colors hover:bg-red-950/60 hover:text-red-100"
-            >
-              Ir a Instagram
-            </a>
-            <a
-              href="https://wa.me/5403534099785?text=Hola%20Speedy%20Repuestos%2C%20quiero%20hacer%20una%20consulta."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md bg-red-600 px-6 py-3 font-bold text-white transition-colors hover:bg-red-700"
-            >
-              Enviar mensaje directo
-            </a>
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:py-24">
+        <div className="mb-9 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-secondary">Encontrá lo tuyo</p>
+            <h2 className="mt-2 text-3xl font-black uppercase tracking-tight text-white sm:text-5xl">Categorías</h2>
           </div>
+          <Link to="/products" className="hidden items-center gap-1 text-sm font-bold text-white/60 hover:text-primary sm:flex">
+            Ver todas <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
-      </div>
-    </section>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((category, index) => (
+            <Link
+              key={category.name}
+              to={`/products?category=${encodeURIComponent(category.name)}`}
+              className="group relative min-h-56 overflow-hidden rounded-2xl border border-white/10 bg-[#111] p-6 transition hover:-translate-y-1 hover:border-primary/45"
+            >
+              <span className="text-7xl font-black text-white/[0.035]">0{index + 1}</span>
+              <div className="absolute inset-x-6 bottom-6">
+                <h3 className="text-xl font-black text-white transition group-hover:text-primary">{category.name}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/45">{category.copy}</p>
+                <ArrowRight className="mt-5 h-5 w-5 text-secondary transition group-hover:translate-x-1 group-hover:text-primary" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-y border-white/10 bg-white/[0.02]">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:py-24">
+          <FeaturedProducts />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pt-16 sm:pt-24">
+        <div className="relative overflow-hidden rounded-3xl border border-secondary/25 bg-[#101010] px-6 py-12 sm:px-12 lg:flex lg:items-center lg:justify-between lg:py-16">
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-secondary/15 blur-3xl" />
+          <div className="relative max-w-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">¿No sabés cuál elegir?</p>
+            <h2 className="mt-3 text-3xl font-black uppercase text-white sm:text-5xl">Te ayudamos a encontrar el repuesto correcto.</h2>
+          </div>
+          <a href="https://wa.me/5403534099785?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20necesito%20asesoramiento." target="_blank" rel="noreferrer" className="relative mt-8 inline-flex min-h-13 items-center justify-center rounded-full bg-white px-7 py-3.5 text-sm font-black uppercase text-black transition hover:bg-primary lg:mt-0">
+            Hablar por WhatsApp
+          </a>
+        </div>
+      </section>
+    </div>
   );
 }

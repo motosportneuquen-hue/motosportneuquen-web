@@ -1,53 +1,57 @@
+import { ArrowUpRight, Instagram, MapPin, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Instagram, MapPin, Phone } from 'lucide-react';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/speedyrepuestos/';
-const WHATSAPP_URL = 'https://wa.me/5403534099785?text=Hola%20Speedy%20Repuestos%2C%20quiero%20hacer%20una%20consulta.';
+const WHATSAPP_URL = 'https://wa.me/5403534099785?text=Hola%20MotoSport%20Neuqu%C3%A9n%2C%20quiero%20hacer%20una%20consulta.';
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-black pt-12 pb-6 text-white">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+    <footer className="border-t border-white/10 bg-[#060606] text-white">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1fr]">
           <div>
-            <p className="font-brand text-2xl font-black">SPEEDY REPUESTOS</p>
-            <p className="mt-3 max-w-sm text-sm text-gray-200">
-              Envios a todo el pais. Repuestos, accesorios y soluciones para motos.
-            </p>
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 font-bold text-white hover:text-gray-300 transition-colors">
-              <Instagram className="h-5 w-5" />
-              @speedyrepuestos
-            </a>
+            <div className="relative h-20 w-48 overflow-hidden">
+              <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="absolute -top-10 left-1/2 w-48 max-w-none -translate-x-1/2" />
+            </div>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/45">Repuestos, accesorios e indumentaria para que disfrutes tu moto con seguridad y estilo.</p>
+            <div className="mt-6 flex gap-2">
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="Instagram" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white/70 hover:border-secondary hover:text-secondary"><Instagram className="h-5 w-5" /></a>
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white/70 hover:border-primary hover:text-primary"><MessageCircle className="h-5 w-5" /></a>
+            </div>
           </div>
 
           <div>
-            <h3 className="font-brand mb-4 text-lg font-semibold text-white">Categorías</h3>
-            <ul className="space-y-2 text-gray-200">
-              <li><Link to="/products?category=Repuestos" className="hover:text-white hover:underline">Repuestos</Link></li>
-              <li><Link to="/products?category=Accesorios" className="hover:text-white hover:underline">Accesorios</Link></li>
-              <li><Link to="/products?category=Cascos%20e%20indumentaria" className="hover:text-white hover:underline">Cascos e indumentaria</Link></li>
-              <li><Link to="/products?category=Cubiertas%20y%20c%C3%A1maras" className="hover:text-white hover:underline">Cubiertas y cámaras</Link></li>
-              <li><Link to="/products?category=Aceites%20y%20lubricantes" className="hover:text-white hover:underline">Aceites y lubricantes</Link></li>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Tienda</h3>
+            <ul className="mt-5 space-y-3 text-sm text-white/45">
+              <li><Link to="/products" className="hover:text-primary">Productos</Link></li>
+              <li><Link to="/offers" className="hover:text-primary">Ofertas</Link></li>
+              <li><Link to="/cart" className="hover:text-primary">Carrito</Link></li>
+              <li><Link to="/orders" className="hover:text-primary">Mi pedido</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-brand mb-4 text-lg font-semibold text-white">Contacto</h3>
-            <ul className="space-y-3 text-gray-200">
-              <li className="flex items-start"><MapPin className="mr-2 mt-0.5 h-5 w-5 text-white" /><span>Envios a todo el pais</span></li>
-              <li className="flex items-center"><Phone className="mr-2 h-5 w-5 text-white" /><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="hover:text-white hover:underline">Contacto por WhatsApp</a></li>
-              <li className="flex items-center"><Instagram className="mr-2 h-5 w-5 text-white" /><a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="hover:text-white hover:underline">@speedyrepuestos</a></li>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Ayuda</h3>
+            <ul className="mt-5 space-y-3 text-sm text-white/45">
+              <li><Link to="/shipping" className="hover:text-primary">Envíos</Link></li>
+              <li><Link to="/returns" className="hover:text-primary">Cambios</Link></li>
+              <li><Link to="/faq" className="hover:text-primary">Preguntas frecuentes</Link></li>
+              <li><Link to="/contact" className="hover:text-primary">Contacto</Link></li>
             </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Contacto</h3>
+            <div className="mt-5 space-y-4 text-sm text-white/45">
+              <p className="flex gap-3"><MapPin className="h-5 w-5 shrink-0 text-primary" /> Neuquén, Argentina<br />Envíos a todo el país</p>
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 font-bold text-white hover:text-primary">Escribinos por WhatsApp <ArrowUpRight className="h-4 w-4" /></a>
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-6 text-center md:text-left">
-          <p className="text-sm text-gray-200">
-            © {new Date().getFullYear()} Speedy Repuestos. Todos los derechos reservados.
-          </p>
-          <p className="mt-2 text-[10px] tracking-[0.18em] text-white/30" aria-label="Sitio creado por Juan Cruz Bucchioni">
-            Juan Cruz Bucchioni
-          </p>
+        <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/30 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} MotoSport Neuquén. Todos los derechos reservados.</p>
+          <p>Diseñado para rodar.</p>
         </div>
       </div>
     </footer>

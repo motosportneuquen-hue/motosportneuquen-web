@@ -92,22 +92,22 @@ export default function Categorias() {
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8">
-      <div className="rounded-md border border-red-900/80 bg-black p-6 shadow-[0_0_28px_rgba(127,29,29,0.24)] md:p-8">
-        <div className="mb-8 rounded-full border border-red-800/80 bg-zinc-950 px-5 py-4 text-center text-sm font-black text-white shadow-[0_0_18px_rgba(127,29,29,0.16)]">
+      <div className="rounded-md border border-purple-900/80 bg-black p-6 shadow-[0_0_28px_rgba(76,29,149,0.24)] md:p-8">
+        <div className="mb-8 rounded-full border border-purple-800/80 bg-zinc-950 px-5 py-4 text-center text-sm font-black text-white shadow-[0_0_18px_rgba(76,29,149,0.16)]">
           <button
             type="button"
             onClick={() => setSelectedCategory('')}
-            className={`transition-colors hover:text-red-400 ${selectedCategory === '' ? 'text-red-400' : ''}`}
+            className={`transition-colors hover:text-purple-400 ${selectedCategory === '' ? 'text-purple-400' : ''}`}
           >
             Todas
           </button>
           {categories.map((category) => (
             <span key={category.name}>
-              <span className="mx-2 text-red-900/80">|</span>
+              <span className="mx-2 text-purple-900/80">|</span>
               <button
                 type="button"
                 onClick={() => setSelectedCategory(category.name)}
-                className={`transition-colors hover:text-red-400 ${selectedCategory === category.name ? 'text-red-400' : ''}`}
+                className={`transition-colors hover:text-purple-400 ${selectedCategory === category.name ? 'text-purple-400' : ''}`}
               >
                 {category.name}
               </button>
@@ -115,7 +115,7 @@ export default function Categorias() {
           ))}
         </div>
 
-        <div className="mb-8 inline-flex min-w-56 items-center justify-center rounded-full border border-red-800/80 bg-zinc-950 px-8 py-3 text-sm font-black text-white shadow-[0_0_18px_rgba(127,29,29,0.16)]">
+        <div className="mb-8 inline-flex min-w-56 items-center justify-center rounded-full border border-purple-800/80 bg-zinc-950 px-8 py-3 text-sm font-black text-white shadow-[0_0_18px_rgba(76,29,149,0.16)]">
           Productos
         </div>
 
@@ -127,7 +127,7 @@ export default function Categorias() {
 
         <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-red-300">Categoria</p>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-purple-300">Categoria</p>
             <h1 className="font-brand mt-2 text-2xl font-black text-white md:text-4xl">{heading}</h1>
           </div>
           <p className="text-sm font-bold text-white/70">

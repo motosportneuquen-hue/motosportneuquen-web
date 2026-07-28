@@ -4,13 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#DC2626',
-        secondary: '#991B1B',
+        primary: '#55E600',
+        secondary: '#B900E6',
         background: '#050505',
         darkBackground: '#020202',
         text: '#F5F5F5',
         textLight: '#B8B8B8',
-        borderColor: '#3F3F46',
+        borderColor: '#3A2350',
         success: '#10B981',
         error: '#EF4444',
         magenta: {

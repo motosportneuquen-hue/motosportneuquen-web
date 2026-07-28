@@ -19,9 +19,9 @@ export default function DarkModeToggle() {
   return (
     <button onClick={() => setDarkMode(!darkMode)} className="ml-4">
       {darkMode ? (
-        <Sun className="h-6 w-6 text-red-400" />
+        <Sun className="h-6 w-6 text-purple-400" />
       ) : (
-        <Moon className="h-6 w-6 text-red-800" />
+        <Moon className="h-6 w-6 text-purple-800" />
       )}
     </button>
   );

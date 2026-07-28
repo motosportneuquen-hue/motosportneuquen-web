@@ -12,7 +12,7 @@ export default function Contact() {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const text =
-      `Hola Speedy Repuestos. Soy ${name.trim()}.\n` +
+      `Hola MotoSport Neuquén. Soy ${name.trim()}.\n` +
       `Motivo: ${subject}.\n` +
       `Consulta: ${message.trim()}`;
     window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
@@ -32,9 +32,9 @@ export default function Contact() {
               href={`https://wa.me/${WHATSAPP_PHONE}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-xl border border-red-800/70 bg-black p-4 hover:bg-red-950/40"
+              className="flex items-center gap-3 rounded-xl border border-purple-800/70 bg-black p-4 hover:bg-purple-950/40"
             >
-              <MessageCircle className="h-6 w-6 text-red-400" />
+              <MessageCircle className="h-6 w-6 text-purple-400" />
               <span><strong>WhatsApp</strong><br /><small className="text-gray-300">Atencion y pedidos</small></span>
             </a>
             <a
@@ -43,7 +43,7 @@ export default function Contact() {
               rel="noopener noreferrer"
               className="flex items-center gap-3 rounded-xl border border-white/15 bg-black p-4 hover:bg-white/5"
             >
-              <Instagram className="h-6 w-6 text-red-400" />
+              <Instagram className="h-6 w-6 text-purple-400" />
               <span><strong>@speedyrepuestos</strong><br /><small className="text-gray-300">Novedades e ingresos</small></span>
             </a>
             <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300">
@@ -70,7 +70,7 @@ export default function Contact() {
               Mensaje
               <textarea required rows={6} value={message} onChange={(event) => setMessage(event.target.value)} className="mt-2 w-full rounded-lg border border-white/20 bg-zinc-900 px-4 py-3 text-white" />
             </label>
-            <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-3 font-black hover:bg-red-700">
+            <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-black hover:bg-purple-700">
               <Send className="h-5 w-5" /> Enviar por WhatsApp
             </button>
           </form>

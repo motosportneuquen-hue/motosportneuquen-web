@@ -11,9 +11,9 @@ export default function About() {
   return (
     <section className="container py-10 text-white">
       <div className="mx-auto max-w-5xl">
-        <div className="overflow-hidden rounded-2xl border border-red-900/70 bg-black p-6 text-center md:p-10">
-          <img src="/branding/speedy-logo-final.png" alt="Speedy Repuestos" className="mx-auto h-40 w-full object-contain md:h-56" />
-          <h1 className="mt-4 text-3xl font-black md:text-5xl">Somos Speedy Repuestos</h1>
+        <div className="overflow-hidden rounded-2xl border border-purple-900/70 bg-black p-6 text-center md:p-10">
+          <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="mx-auto h-40 w-full object-contain md:h-56" />
+          <h1 className="mt-4 text-3xl font-black md:text-5xl">Somos MotoSport Neuquén</h1>
           <p className="mx-auto mt-4 max-w-3xl text-lg text-gray-300">
             Un catalogo online pensado para ayudarte a encontrar el repuesto adecuado y resolver cada compra con atencion personalizada.
           </p>
@@ -21,7 +21,7 @@ export default function About() {
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
           {values.map(({ icon: Icon, title, text }) => (
             <article key={title} className="rounded-xl border border-white/10 bg-zinc-950 p-6">
-              <Icon className="h-9 w-9 text-red-400" />
+              <Icon className="h-9 w-9 text-purple-400" />
               <h2 className="mt-4 text-xl font-black">{title}</h2>
               <p className="mt-2 text-gray-300">{text}</p>
             </article>

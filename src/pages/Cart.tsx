@@ -85,7 +85,7 @@ export default function Cart() {
       });
 
       const message =
-        `Hola Speedy Repuestos, ya hice el pedido ${orderId} desde la web.\n\n` +
+        `Hola MotoSport Neuquén, ya hice el pedido ${orderId} desde la web.\n\n` +
         `${lines.join('\n')}\n\n` +
         `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
         `Total: ${formatOrderTotal()}\n\n` +
@@ -105,7 +105,7 @@ export default function Cart() {
     });
 
     const message =
-      `Hola Speedy Repuestos, quiero comprar estos productos:\n\n` +
+      `Hola MotoSport Neuquén, quiero comprar estos productos:\n\n` +
       `${lines.join('\n')}\n\n` +
       `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
       `Total: ${formatOrderTotal()}\n\n` +
@@ -165,7 +165,7 @@ export default function Cart() {
                 </div>
                 <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-end">
                   <p className="font-semibold text-white mb-2">{formatItemPrice(item.price * item.quantity)}</p>
-                  <button onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} del carrito`} className="flex h-11 w-11 items-center justify-center text-red-400 transition-colors hover:text-gray-300">
+                  <button onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} del carrito`} className="flex h-11 w-11 items-center justify-center text-purple-400 transition-colors hover:text-gray-300">
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
@@ -183,7 +183,7 @@ export default function Cart() {
           <div className="bg-black/55 backdrop-blur-sm p-6 rounded-lg border border-primary/30 h-fit">
             <h2 className="text-xl font-semibold text-white mb-4">Resumen del pedido</h2>
             {checkoutMessage ? (
-              <div className="mb-4 rounded-lg border border-red-800/70 bg-red-950/30 p-3 text-sm text-red-100">
+              <div className="mb-4 rounded-lg border border-purple-800/70 bg-purple-950/30 p-3 text-sm text-purple-100">
                 {checkoutMessage}
               </div>
             ) : null}

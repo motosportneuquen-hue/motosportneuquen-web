@@ -174,7 +174,7 @@ export default function Perfil() {
                 </button>
                 <button 
                   onClick={handleSignOut}
-                  className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                 >
                   <LogOut className="h-5 w-5" />
                   <span>Cerrar sesion</span>
@@ -239,11 +239,11 @@ export default function Perfil() {
                       onChange={handleChange}
                       required
                       className={`w-full px-4 py-2 rounded-lg border ${
-                        usernameError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'
+                        usernameError ? 'border-purple-500 dark:border-purple-500' : 'border-gray-300 dark:border-gray-600'
                       } bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary`}
                     />
                     {usernameError && (
-                      <p className="mt-1 text-sm text-red-500">{usernameError}</p>
+                      <p className="mt-1 text-sm text-purple-500">{usernameError}</p>
                     )}
                   </div>
                   

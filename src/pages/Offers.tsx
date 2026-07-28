@@ -75,7 +75,7 @@ export default function Offers() {
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8">
-      <div className="mb-12 rounded-full border border-red-800/80 bg-zinc-950 px-6 py-3 text-center text-sm font-black uppercase tracking-[0.24em] text-white shadow-[0_0_22px_rgba(127,29,29,0.18)]">
+      <div className="mb-12 rounded-full border border-purple-800/80 bg-zinc-950 px-6 py-3 text-center text-sm font-black uppercase tracking-[0.24em] text-white shadow-[0_0_22px_rgba(76,29,149,0.18)]">
         Ofertas
       </div>
 
@@ -102,14 +102,14 @@ export default function Offers() {
               </div>
 
               <article className="product-sale-card relative flex min-h-[470px] flex-col overflow-hidden rounded-[28px]">
-                <span className="absolute left-4 top-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-center text-[11px] font-black uppercase leading-tight text-white shadow-[0_0_18px_rgba(220,38,38,0.45)]">
+                <span className="absolute left-4 top-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-center text-[11px] font-black uppercase leading-tight text-white shadow-[0_0_18px_rgba(85,230,0,0.45)]">
                   {offer.badge}
                 </span>
                 <span className="absolute right-4 top-4 z-20 rounded-full border border-white bg-black/80 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
                   Sale
                 </span>
 
-                <div className="flex h-72 items-center justify-center border-b border-red-950/60 bg-zinc-900 p-4">
+                <div className="flex h-72 items-center justify-center border-b border-purple-950/60 bg-zinc-900 p-4">
                   <img
                     src={offer.product.image_url}
                     alt={offer.product.name}
@@ -133,7 +133,7 @@ export default function Offers() {
                     <p className="text-sm font-bold uppercase tracking-[0.2em] text-white/70">
                       Precio oferta
                     </p>
-                    <p className="mt-2 text-3xl font-black text-red-500">
+                    <p className="mt-2 text-3xl font-black text-purple-500">
                       {formatProductPrice(Math.round(offer.price))}
                     </p>
                   </div>

@@ -56,12 +56,9 @@ function App() {
   }, [checkUser]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-transparent transition-all duration-300">
-      {/* Navbar */}
+    <div className="flex min-h-screen flex-col bg-[#080808]">
       <Navbar />
-
-      {/* Soft transitions */}
-      <main className="flex-grow container py-10 animate-fadeInUp">
+      <main className="flex-grow animate-fadeInUp">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/offers" element={<Offers />} />
@@ -84,10 +81,8 @@ function App() {
         </Routes>
       </main>
 
-      {/* Footer */}
       <Footer />
       <WhatsAppFloat />
-      
     </div>
   );
 }

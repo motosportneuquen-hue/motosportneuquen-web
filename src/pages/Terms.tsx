@@ -2,7 +2,7 @@ const sections = [
   {
     title: 'Uso del catalogo',
     paragraphs: [
-      'El sitio permite consultar productos y preparar pedidos para Speedy Repuestos. Las imagenes y descripciones ayudan a identificar cada articulo, pero ante dudas de compatibilidad conviene confirmar el modelo, ano y version de la moto antes de avanzar.',
+      'El sitio permite consultar productos y preparar pedidos para MotoSport Neuquén. Las imagenes y descripciones ayudan a identificar cada articulo, pero ante dudas de compatibilidad conviene confirmar el modelo, ano y version de la moto antes de avanzar.',
     ],
   },
   {
@@ -15,7 +15,7 @@ const sections = [
   {
     title: 'Pagos',
     paragraphs: [
-      'Las opciones mostradas son efectivo y transferencia. Los datos necesarios para completar el pago se coordinan directamente con Speedy Repuestos. Este sitio no solicita ni almacena datos de tarjetas.',
+      'Las opciones mostradas son efectivo y transferencia. Los datos necesarios para completar el pago se coordinan directamente con MotoSport Neuquén. Este sitio no solicita ni almacena datos de tarjetas.',
     ],
   },
   {

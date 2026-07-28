@@ -88,7 +88,7 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
 
   const handleAddToCart = () => {
     if (isOnRequest) {
-      const message = `Hola Speedy Repuestos, quiero consultar por ${product.name}. Modelo de moto: _____. Color: ${selectedColor || '_____'}.`;
+      const message = `Hola MotoSport Neuquén, quiero consultar por ${product.name}. Modelo de moto: _____. Color: ${selectedColor || '_____'}.`;
       window.open(`https://wa.me/5403534099785?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
       onClose();
       return;
@@ -227,7 +227,7 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
                 {product.stock > 0 ? (
                   <span className="text-green-600 dark:text-green-400">En stock ({product.stock} disponibles)</span>
                 ) : (
-                  <span className="text-red-600 dark:text-red-400">Sin stock</span>
+                  <span className="text-purple-600 dark:text-purple-400">Sin stock</span>
                 )}
               </p>
             </div>

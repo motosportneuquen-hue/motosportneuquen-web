@@ -2,10 +2,10 @@
   "name": "modern-ecommerce",
   "version": "0.1.0",
   "private": true,
-  "description": "Catalogo y gestion de pedidos de Speedy Repuestos.",
+  "description": "Catalogo y gestion de pedidos de MotoSport Neuquen.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/juancruzbucchioni-cyber/Speedy.git"
+    "url": "https://github.com/juancruzbucchioni-cyber/moto-sport-neuquen.git"
   },
   "keywords": [
     "ecommerce",
@@ -15,7 +15,7 @@
     "supabase",
     "tailwindcss"
   ],
-  "author": "Speedy Repuestos",
+  "author": "MotoSport Neuquen",
   "license": "MIT",
   "type": "module",
   "engines": {

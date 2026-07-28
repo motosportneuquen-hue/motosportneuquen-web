@@ -179,7 +179,7 @@ export default function ProductosPage() {
           </h1>
         </div>
         <p className="text-gray-300 text-sm md:text-base">
-          Selecciona tu repuesto ideal con el estilo de <span className="text-primary font-bold">Speedy Repuestos</span>.
+          Selecciona tu repuesto ideal con el estilo de <span className="text-primary font-bold">MotoSport Neuquén</span>.
         </p>
       </div>
       <div className="mb-6 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">

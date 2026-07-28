@@ -19,7 +19,7 @@ export default function FAQ() {
     <section className="container py-10 text-white">
       <div className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-zinc-950 p-6 md:p-10">
         <h1 className="text-3xl font-black md:text-4xl">Preguntas frecuentes</h1>
-        <p className="mt-3 text-gray-300">Informacion clara para comprar y consultar en Speedy Repuestos.</p>
+        <p className="mt-3 text-gray-300">Informacion clara para comprar y consultar en MotoSport Neuquén.</p>
         <div className="mt-7 space-y-3">
           {questions.map((item, index) => {
             const isOpen = openIndex === index;
@@ -34,7 +34,7 @@ export default function FAQ() {
             );
           })}
         </div>
-        <a href="https://wa.me/5403534099785" target="_blank" rel="noopener noreferrer" className="mt-7 flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-3 font-black hover:bg-red-700">
+        <a href="https://wa.me/5403534099785" target="_blank" rel="noopener noreferrer" className="mt-7 flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-5 py-3 font-black hover:bg-purple-700">
           <MessageCircle className="h-5 w-5" /> Hacer otra consulta
         </a>
       </div>

@@ -123,7 +123,7 @@ const emptyCategory: CategoryForm = {
 const fieldClass = 'w-full rounded-md border border-white/35 bg-black/60 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-white focus:outline-none';
 const labelClass = 'text-sm font-semibold text-gray-200';
 const panelClass = 'rounded-lg border border-white/30 bg-black/60 p-4 backdrop-blur-sm';
-const sharedBrandImage = '/branding/speedy-logo-final.png';
+const sharedBrandImage = '/branding/motosport-neuquen-logo.png';
 const motorcycleModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
 
 function splitList(value: string) {
@@ -795,7 +795,7 @@ export default function CustomPanel() {
     <section className="container py-10 space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-widest text-white">Speedy Repuestos</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-white">MotoSport Neuquén</p>
           <h1 className="font-brand text-3xl text-white md:text-4xl">Panel administrador</h1>
           <p className="mt-2 text-gray-300">Administra productos y deudores guardados en Supabase.</p>
         </div>
@@ -867,12 +867,12 @@ export default function CustomPanel() {
               />
             </label>
             <label className={labelClass}>Colores separados por coma<input className={fieldClass} value={productForm.colors} onChange={(e) => setProductForm({ ...productForm, colors: e.target.value })} /></label>
-            <label className={`${labelClass} flex items-center gap-3 rounded-md border border-red-800/50 bg-red-950/25 p-3`}>
+            <label className={`${labelClass} flex items-center gap-3 rounded-md border border-purple-800/50 bg-purple-950/25 p-3`}>
               <input
                 type="checkbox"
                 checked={productForm.is_best_seller}
                 onChange={(e) => setProductForm({ ...productForm, is_best_seller: e.target.checked })}
-                className="h-4 w-4 accent-red-600"
+                className="h-4 w-4 accent-purple-600"
               />
               <span>Producto mas vendido</span>
             </label>
@@ -949,7 +949,7 @@ export default function CustomPanel() {
                 <tbody>{filteredProducts.map((product) => (
                   <tr key={product.id} className="border-t border-white/10 text-gray-200">
                     <td className="p-2">{product.name}</td><td className="p-2">{product.category}</td><td className="p-2">{product.motorcycle_model || 'Sin modelo'}</td><td className="p-2 text-white">{product.price > 0 ? formatARS(Math.round(product.price)) : 'Consultar precio'}</td><td className="p-2">{product.stock}</td><td className="p-2">{product.is_best_seller ? 'Si' : 'No'}</td>
-                    <td className="flex gap-2 p-2"><button onClick={() => editProduct(product)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button><button onClick={() => deleteProduct(product.id)} className="rounded bg-red-500/20 p-2 text-red-300"><Trash2 className="h-4 w-4" /></button></td>
+                    <td className="flex gap-2 p-2"><button onClick={() => editProduct(product)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button><button onClick={() => deleteProduct(product.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button></td>
                   </tr>
                 ))}</tbody>
               </table>
@@ -965,7 +965,7 @@ export default function CustomPanel() {
             <label className={labelClass}>Nombre<input required className={fieldClass} value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} /></label>
             <label className={labelClass}>Descripcion<textarea className={`${fieldClass} min-h-24`} value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} /></label>
             <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-gray-300">
-              Usa la imagen general de Speedy y el orden se asigna automaticamente al crear.
+              Usa la imagen general de MotoSport Neuquén y el orden se asigna automaticamente al crear.
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className={labelClass}>Orden actual<input type="number" className={fieldClass} value={categoryForm.orden} onChange={(e) => setCategoryForm({ ...categoryForm, orden: e.target.value })} disabled={!categoryForm.id} /></label>
@@ -994,7 +994,7 @@ export default function CustomPanel() {
                   <td className="p-2">{category.description || 'Sin descripcion'}</td>
                   <td className="flex gap-2 p-2">
                     <button onClick={() => editCategory(category)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button>
-                    <button onClick={() => deleteCategory(category.id)} className="rounded bg-red-500/20 p-2 text-red-300"><Trash2 className="h-4 w-4" /></button>
+                    <button onClick={() => deleteCategory(category.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button>
                   </td>
                 </tr>
               ))}</tbody>
@@ -1010,7 +1010,7 @@ export default function CustomPanel() {
             <label className={labelClass}>Nombre<input required className={fieldClass} value={testimonialForm.nombre} onChange={(e) => setTestimonialForm({ ...testimonialForm, nombre: e.target.value })} /></label>
             <label className={labelClass}>Mensaje<textarea required className={`${fieldClass} min-h-24`} value={testimonialForm.mensaje} onChange={(e) => setTestimonialForm({ ...testimonialForm, mensaje: e.target.value })} /></label>
             <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-gray-300">
-              Usa la imagen general de Speedy y el orden se asigna automaticamente al crear.
+              Usa la imagen general de MotoSport Neuquén y el orden se asigna automaticamente al crear.
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className={labelClass}>Orden actual<input type="number" className={fieldClass} value={testimonialForm.orden} onChange={(e) => setTestimonialForm({ ...testimonialForm, orden: e.target.value })} disabled={!testimonialForm.id} /></label>
@@ -1044,7 +1044,7 @@ export default function CustomPanel() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => editTestimonial(testimonial)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button>
-                    <button onClick={() => deleteTestimonial(testimonial.id)} className="rounded bg-red-500/20 p-2 text-red-300"><Trash2 className="h-4 w-4" /></button>
+                    <button onClick={() => deleteTestimonial(testimonial.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </div>
               </div>
@@ -1096,15 +1096,15 @@ export default function CustomPanel() {
                     {debtor.dni ? <p className="text-sm text-gray-400">DNI: {debtor.dni}</p> : null}
                     {debtor.due_date ? <p className="text-sm text-gray-400">Viene a pagar: {debtor.due_date}</p> : null}
                   </div>
-                  <div className="shrink-0 rounded-xl border border-red-700/80 bg-red-950/50 px-4 py-3 text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Debe</p>
+                  <div className="shrink-0 rounded-xl border border-purple-700/80 bg-purple-950/50 px-4 py-3 text-center">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300">Debe</p>
                     <p className="mt-1 text-2xl font-black text-white">{formatARS(Math.round(debtor.amount_due || 0))}</p>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
                   <button onClick={() => markDebtorAsPaid(debtor.id)} className="rounded bg-green-500/20 p-2 text-green-300" title="Marcar como pagado"><CheckCircle className="h-4 w-4" /></button>
                   <button onClick={() => editDebtor(debtor)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button>
-                  <button onClick={() => deleteDebtor(debtor.id)} className="rounded bg-red-500/20 p-2 text-red-300"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => deleteDebtor(debtor.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button>
                   <p className="ml-auto text-xs text-gray-500">{new Date(debtor.created_at).toLocaleDateString('es-AR')}</p>
                 </div>
               </div>

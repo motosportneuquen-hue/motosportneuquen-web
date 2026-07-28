@@ -16,7 +16,7 @@ export default function ShippingPolicy() {
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
           {items.map(({ icon: Icon, title, text }) => (
             <article key={title} className="rounded-xl border border-white/10 bg-black p-5">
-              <Icon className="h-8 w-8 text-red-400" />
+              <Icon className="h-8 w-8 text-purple-400" />
               <h2 className="mt-3 text-xl font-black">{title}</h2>
               <p className="mt-2 text-gray-300">{text}</p>
             </article>
