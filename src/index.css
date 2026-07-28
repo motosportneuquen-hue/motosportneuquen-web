@@ -137,8 +137,8 @@ select option {
 
 @media (min-width: 1024px) {
   #root {
-    width: 111.111%;
-    min-height: 111.111vh;
+    width: 100%;
+    min-height: 100vh;
     zoom: 0.9;
   }
 
