@@ -1,7 +1,7 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { BarChart3, Calculator, CheckCircle, Download, Edit, Mail, MapPin, PackageCheck, Phone, RefreshCw, Save, Search, Trash2, Truck, Users } from 'lucide-react';
+import { BarChart3, Calculator, CheckCircle, Download, Edit, Mail, MapPin, PackageCheck, Phone, RefreshCw, Save, Search, TicketPercent, Trash2, Truck, Users } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
@@ -97,6 +97,8 @@ type AdminOrder = {
   total_price: number;
   status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
   payment_method?: string | null;
+  coupon_code?: string | null;
+  discount_amount?: number | null;
   source?: string | null;
   customer_name?: string | null;
   customer_phone?: string | null;
@@ -126,6 +128,21 @@ type AdminCustomer = {
   orderCount: number;
   totalSpent: number;
   lastOrderAt: string;
+};
+
+type AdminCoupon = {
+  id: string;
+  code: string;
+  discount_percent: number;
+  active: boolean;
+  created_at: string;
+};
+
+type CouponForm = {
+  id?: string;
+  code: string;
+  discountPercent: string;
+  active: boolean;
 };
 
 type BulkProductRow = {
@@ -184,6 +201,18 @@ const emptyCategory: CategoryForm = {
   activo: true,
   orden: '0',
 };
+
+const emptyCoupon: CouponForm = {
+  code: '',
+  discountPercent: '10',
+  active: true,
+};
+
+function generateCouponCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const values = crypto.getRandomValues(new Uint32Array(7));
+  return Array.from(values, (value) => alphabet[value % alphabet.length]).join('');
+}
 
 const fieldClass = 'mt-1.5 min-h-11 w-full rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-primary/60 focus:bg-white/[0.055]';
 const labelClass = 'block text-xs font-bold uppercase tracking-[0.08em] text-white/60';
@@ -340,7 +369,7 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'customers' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'customers' | 'coupons' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -349,6 +378,8 @@ export default function CustomPanel() {
   const [motorcycleModels, setMotorcycleModels] = useState<AdminMotorcycleModel[]>([]);
   const [modelName, setModelName] = useState('');
   const [offers, setOffers] = useState<AdminOffer[]>([]);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
+  const [couponForm, setCouponForm] = useState<CouponForm>(emptyCoupon);
   const [offerProductId, setOfferProductId] = useState('');
   const [offerPercent, setOfferPercent] = useState('10');
   const [offerTitle, setOfferTitle] = useState('Oferta especial');
@@ -476,7 +507,7 @@ export default function CustomPanel() {
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
 
-    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }, { data: offersData }] = await Promise.all([
+    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }, { data: offersData }, { data: couponsData }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
@@ -485,6 +516,7 @@ export default function CustomPanel() {
       supabase.from('orders').select('*, order_items(id, quantity, price, cost_price, products(name, cost_price))').order('created_at', { ascending: false }),
       supabase.from('motorcycle_models').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
       supabase.from('offers').select('*, products(*)').order('orden', { ascending: true }).order('created_at', { ascending: false }),
+      supabase.from('coupons').select('*').order('created_at', { ascending: false }),
     ]);
 
     setProducts((productData || []) as Product[]);
@@ -494,6 +526,7 @@ export default function CustomPanel() {
     setOrders((ordersData || []) as AdminOrder[]);
     setMotorcycleModels((modelsData || []) as AdminMotorcycleModel[]);
     setOffers((offersData || []) as AdminOffer[]);
+    setCoupons((couponsData || []) as AdminCoupon[]);
 
     const groupedImages = ((imagesData || []) as ProductImage[]).reduce<Record<string, ProductImage[]>>((acc, image) => {
       acc[image.product_id] = [...(acc[image.product_id] || []), image];
@@ -985,6 +1018,58 @@ export default function CustomPanel() {
     if (!error) await loadData();
   };
 
+  const saveCoupon = async (event: FormEvent) => {
+    event.preventDefault();
+    const code = couponForm.code.trim().toUpperCase();
+    const percent = Number(couponForm.discountPercent);
+    if (!/^[A-Z0-9]{7}$/.test(code)) {
+      setMessage('El código debe tener exactamente 7 letras o números.');
+      return;
+    }
+    if (!Number.isInteger(percent) || percent < 1 || percent > 90) {
+      setMessage('El descuento debe ser un porcentaje entero entre 1 y 90.');
+      return;
+    }
+
+    setSaving(true);
+    const payload = { code, discount_percent: percent, active: couponForm.active, updated_at: new Date().toISOString() };
+    const request = couponForm.id
+      ? supabase.from('coupons').update(payload).eq('id', couponForm.id)
+      : supabase.from('coupons').insert(payload);
+    const { error } = await request;
+    setMessage(error ? `No se pudo guardar el cupón: ${error.message}` : 'Cupón guardado correctamente.');
+    if (!error) setCouponForm(emptyCoupon);
+    setSaving(false);
+    if (!error) await loadData();
+  };
+
+  const editCoupon = (coupon: AdminCoupon) => {
+    setCouponForm({
+      id: coupon.id,
+      code: coupon.code,
+      discountPercent: String(coupon.discount_percent),
+      active: coupon.active,
+    });
+    setActiveTab('coupons');
+  };
+
+  const toggleCoupon = async (coupon: AdminCoupon) => {
+    const { error } = await supabase
+      .from('coupons')
+      .update({ active: !coupon.active, updated_at: new Date().toISOString() })
+      .eq('id', coupon.id);
+    setMessage(error ? `No se pudo actualizar el cupón: ${error.message}` : `Cupón ${coupon.active ? 'desactivado' : 'activado'}.`);
+    if (!error) await loadData();
+  };
+
+  const deleteCoupon = async (couponId: string) => {
+    if (!confirm('¿Seguro que querés eliminar este cupón?')) return;
+    const { error } = await supabase.from('coupons').delete().eq('id', couponId);
+    setMessage(error ? `No se pudo eliminar el cupón: ${error.message}` : 'Cupón eliminado.');
+    if (!error && couponForm.id === couponId) setCouponForm(emptyCoupon);
+    if (!error) await loadData();
+  };
+
   const exportDebtorsCsv = () => {
     const rows = debtors.map((debtor) => ({
       estado: debtor.status === 'paid' || debtor.paid_at ? 'Pagado' : 'Pendiente',
@@ -1083,6 +1168,7 @@ export default function CustomPanel() {
           ['costs', 'Costos y ganancias'],
           ['customers', 'Clientes'],
           ['orders', 'Pedidos'],
+          ['coupons', 'Cupones'],
           ['offers', 'Ofertas'],
           ['products', 'Productos'],
           ['categories', 'Categorias'],
@@ -1312,6 +1398,124 @@ export default function CustomPanel() {
         </div>
       ) : null}
 
+      {activeTab === 'coupons' ? (
+        <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
+          <form onSubmit={saveCoupon} className={panelClass}>
+            <div className="flex items-center gap-2">
+              <TicketPercent className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-black text-white">{couponForm.id ? 'Editar cupón' : 'Nuevo cupón'}</h2>
+            </div>
+            <p className="mt-1 text-sm text-white/40">Creá códigos de descuento para usar en la bolsa.</p>
+
+            <label className={`${labelClass} mt-5`}>
+              Código
+              <div className="mt-1.5 flex gap-2">
+                <input
+                  value={couponForm.code}
+                  onChange={(event) => setCouponForm((current) => ({ ...current, code: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7) }))}
+                  placeholder="AB12CD3"
+                  maxLength={7}
+                  required
+                  className={`${fieldClass} mt-0 font-mono text-base font-black tracking-[0.18em]`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setCouponForm((current) => ({ ...current, code: generateCouponCode() }))}
+                  className="min-h-11 shrink-0 rounded-lg border border-primary/40 px-3 text-xs font-black text-primary transition hover:bg-primary hover:text-black"
+                >
+                  Generar
+                </button>
+              </div>
+            </label>
+
+            <label className={`${labelClass} mt-4`}>
+              Descuento
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  max="90"
+                  step="1"
+                  value={couponForm.discountPercent}
+                  onChange={(event) => setCouponForm((current) => ({ ...current, discountPercent: event.target.value }))}
+                  required
+                  className={`${fieldClass} pr-10`}
+                />
+                <span className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 font-black text-white/40">%</span>
+              </div>
+            </label>
+
+            <label className="mt-4 flex cursor-pointer items-center justify-between rounded-lg border border-white/10 bg-white/[0.025] p-3">
+              <span>
+                <span className="block text-sm font-bold text-white">Cupón activo</span>
+                <span className="block text-xs text-white/35">El cliente puede usarlo ahora.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={couponForm.active}
+                onChange={(event) => setCouponForm((current) => ({ ...current, active: event.target.checked }))}
+                className="h-5 w-5 accent-[#56f000]"
+              />
+            </label>
+
+            <div className="mt-5 flex gap-2">
+              <button disabled={saving} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 font-black text-black disabled:opacity-50">
+                <Save className="h-4 w-4" /> {couponForm.id ? 'Guardar cambios' : 'Crear cupón'}
+              </button>
+              {couponForm.id ? (
+                <button type="button" onClick={() => setCouponForm(emptyCoupon)} className="rounded-lg border border-white/10 px-4 font-bold text-white/60 hover:text-white">
+                  Cancelar
+                </button>
+              ) : null}
+            </div>
+          </form>
+
+          <div className={panelClass}>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-white">Cupones creados</h2>
+                <p className="mt-1 text-sm text-white/40">Activá, desactivá, editá o eliminá cualquier código.</p>
+              </div>
+              <span className="text-sm font-bold text-white/45">{coupons.length} cupones</span>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {coupons.map((coupon) => (
+                <article key={coupon.id} className="flex flex-col gap-4 rounded-xl border border-white/[0.08] bg-black/25 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-lg font-black tracking-[0.16em] text-white">{coupon.code}</span>
+                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-black text-primary">{coupon.discount_percent}% OFF</span>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${coupon.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/[0.06] text-white/35'}`}>
+                        {coupon.active ? 'Activo' : 'Desactivado'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-white/30">Creado el {new Date(coupon.created_at).toLocaleDateString('es-AR')}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => toggleCoupon(coupon)} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-bold text-white/65 hover:border-primary/40 hover:text-primary">
+                      {coupon.active ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button type="button" onClick={() => editCoupon(coupon)} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-bold text-white/65 hover:text-white">
+                      <Edit className="h-3.5 w-3.5" /> Editar
+                    </button>
+                    <button type="button" onClick={() => deleteCoupon(coupon.id)} aria-label={`Eliminar cupón ${coupon.code}`} className="flex h-10 w-10 items-center justify-center rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {!coupons.length ? (
+                <div className="rounded-xl border border-dashed border-white/10 py-12 text-center text-white/40">
+                  <TicketPercent className="mx-auto h-9 w-9 text-white/20" />
+                  <p className="mt-3 font-bold">Todavía no creaste cupones.</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {activeTab === 'offers' ? (
         <div className="grid items-start gap-6 lg:grid-cols-[380px_1fr]">
           <form onSubmit={createOffer} className={`${panelClass} space-y-4`}>
@@ -1458,6 +1662,7 @@ export default function CustomPanel() {
                     <span>{order.customer_phone || 'Teléfono por WhatsApp'}</span>
                     {order.customer_email ? <span>{order.customer_email}</span> : null}
                     <span>{adminPaymentLabel(order.payment_method)}</span>
+                    {order.coupon_code ? <span className="font-bold text-primary">Cupón {order.coupon_code} · -{formatARS(Math.round(Number(order.discount_amount || 0)))}</span> : null}
                   </div>
                   <div className="mt-4 grid gap-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-4 text-sm sm:grid-cols-2">
                     <div>

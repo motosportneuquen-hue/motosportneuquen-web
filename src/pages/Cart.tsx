@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Truck, Banknote, CreditCard, Landmark, WalletCards } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Truck, Banknote, CreditCard, Landmark, WalletCards, TicketPercent } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
@@ -62,6 +62,10 @@ export default function Cart() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transferencia');
   const [submitting, setSubmitting] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPercent, setCouponPercent] = useState(0);
+  const [couponMessage, setCouponMessage] = useState('');
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [postalCode, setPostalCode] = useState('');
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([]);
   const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null);
@@ -87,8 +91,9 @@ export default function Cart() {
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discount = Math.round(subtotal * couponPercent / 100);
   const shipping = selectedShipping?.price || 0;
-  const total = subtotal + shipping;
+  const total = subtotal - discount + shipping;
   const hasPendingPrices = cartItems.some((item) => item.price <= 0);
   const hasDemoItems = cartItems.some((item) => item.product_id.startsWith('demo-'));
 
@@ -99,6 +104,27 @@ export default function Cart() {
     if (!hasPendingPrices) return formatARS(Math.round(total));
     if (total <= 0) return 'Precio total a confirmar';
     return `${formatARS(Math.round(total))} + precios a confirmar`;
+  };
+
+  const applyCoupon = async () => {
+    const code = couponCode.trim().toUpperCase();
+    setCouponCode(code);
+    setCouponMessage('');
+    setCouponPercent(0);
+    if (!code) {
+      setCouponMessage('Ingresá un código.');
+      return;
+    }
+    setValidatingCoupon(true);
+    const { data, error } = await supabase.rpc('validate_coupon', { requested_code: code });
+    const coupon = Array.isArray(data) ? data[0] : null;
+    if (error || !coupon) {
+      setCouponMessage('El cupón no existe o está desactivado.');
+    } else {
+      setCouponPercent(Number(coupon.discount_percent));
+      setCouponMessage(`Cupón aplicado: ${coupon.discount_percent}% de descuento.`);
+    }
+    setValidatingCoupon(false);
   };
 
   const quoteShipping = async () => {
@@ -195,6 +221,7 @@ export default function Cart() {
         buyer_province: buyer.province.trim(),
         buyer_postal_code: buyer.postalCode.trim().toUpperCase(),
         buyer_notes: buyer.notes.trim(),
+        coupon_code: couponPercent > 0 ? couponCode : null,
       });
 
       if (error) {
@@ -214,6 +241,7 @@ export default function Cart() {
         `Hola MotoSport Neuquén, ya hice el pedido ${orderId} desde la web.\n\n` +
         `${lines.join('\n')}\n\n` +
         `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
+        `${couponPercent > 0 ? `Cupón: ${couponCode} (${couponPercent}% OFF)\n` : ''}` +
         `Cliente: ${buyer.name.trim()} · ${buyer.phone.trim()}\n` +
         `Entrega: ${buyer.address.trim()}, ${buyer.locality.trim()}, ${buyer.province.trim()} (${buyer.postalCode.trim().toUpperCase()})\n` +
         `${selectedShipping ? `Envío: ${selectedShipping.provider} - ${selectedShipping.service} (${selectedShipping.deliveryType}) - ${formatARS(Math.round(selectedShipping.price))}\n` : 'Envío: a coordinar\n'}` +
@@ -237,6 +265,7 @@ export default function Cart() {
       `Hola MotoSport Neuquén, quiero comprar estos productos:\n\n` +
       `${lines.join('\n')}\n\n` +
       `Forma de pago: ${paymentLabel(paymentMethod)}\n` +
+      `${couponPercent > 0 ? `Cupón: ${couponCode} (${couponPercent}% OFF)\n` : ''}` +
       `Cliente: ${buyer.name.trim()} · ${buyer.phone.trim()} · ${buyer.email.trim()}\n` +
       `Entrega: ${buyer.address.trim()}, ${buyer.locality.trim()}, ${buyer.province.trim()} (${buyer.postalCode.trim().toUpperCase()})\n` +
       `${buyer.notes.trim() ? `Observaciones: ${buyer.notes.trim()}\n` : ''}` +
@@ -362,6 +391,35 @@ export default function Cart() {
                 </label>
               </div>
             </div>
+            <div className="mb-5 rounded-lg border border-white/15 bg-white/[0.03] p-4">
+              <label htmlFor="coupon-code" className="flex items-center gap-2 text-sm font-bold text-white">
+                <TicketPercent className="h-4 w-4 text-primary" />
+                ¿Tenés un cupón?
+              </label>
+              <div className="mt-3 flex gap-2">
+                <input
+                  id="coupon-code"
+                  value={couponCode}
+                  onChange={(event) => {
+                    setCouponCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7));
+                    setCouponPercent(0);
+                    setCouponMessage('');
+                  }}
+                  placeholder="Ingresá el código"
+                  maxLength={7}
+                  className="min-w-0 flex-1 rounded-md border border-white/20 bg-black/60 px-3 py-2 font-mono font-black uppercase tracking-[0.12em] text-white outline-none placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-white/25 focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={validatingCoupon || !couponCode.trim()}
+                  className="rounded-md bg-primary px-4 py-2 font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {validatingCoupon ? '...' : 'Aplicar'}
+                </button>
+              </div>
+              {couponMessage ? <p className={`mt-2 text-xs font-semibold ${couponPercent > 0 ? 'text-primary' : 'text-amber-300'}`}>{couponMessage}</p> : null}
+            </div>
             <div className="space-y-2 mb-4">
               <div className="flex justify-between gap-4 text-gray-300">
                 <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
@@ -371,6 +429,12 @@ export default function Cart() {
                 <span>Envio</span>
                 <span>{selectedShipping ? formatARS(Math.round(shipping)) : 'A calcular'}</span>
               </div>
+              {couponPercent > 0 ? (
+                <div className="flex justify-between gap-4 text-primary">
+                  <span>Descuento ({couponPercent}%)</span>
+                  <span>-{formatARS(discount)}</span>
+                </div>
+              ) : null}
               <div className="border-t border-gray-700 pt-2 mt-2">
                 <div className="flex justify-between gap-4 text-lg font-semibold text-white">
                   <span>Total</span>
