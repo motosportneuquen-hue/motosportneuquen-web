@@ -19,6 +19,10 @@ type ProductForm = {
   colors: string;
   extra_images: string;
   is_best_seller: boolean;
+  weight_grams: string;
+  length_cm: string;
+  width_cm: string;
+  height_cm: string;
 };
 
 type CategoryForm = {
@@ -93,6 +97,10 @@ const emptyProduct: ProductForm = {
   colors: 'Negro, Blanco, Gris',
   extra_images: '',
   is_best_seller: false,
+  weight_grams: '500',
+  length_cm: '20',
+  width_cm: '15',
+  height_cm: '10',
 };
 
 const emptyDebtor: DebtorForm = {
@@ -365,6 +373,10 @@ export default function CustomPanel() {
         image_url: extractImageUrl(productForm.image_url),
         colors: splitList(productForm.colors),
         is_best_seller: productForm.is_best_seller,
+        weight_grams: Number(productForm.weight_grams),
+        length_cm: Number(productForm.length_cm),
+        width_cm: Number(productForm.width_cm),
+        height_cm: Number(productForm.height_cm),
     };
 
     const request = productForm.id
@@ -494,6 +506,10 @@ export default function CustomPanel() {
       image_url: product.image_url || '',
       colors: (product.colors || []).join(', '),
       is_best_seller: Boolean(product.is_best_seller),
+      weight_grams: String(product.weight_grams || 500),
+      length_cm: String(product.length_cm || 20),
+      width_cm: String(product.width_cm || 15),
+      height_cm: String(product.height_cm || 10),
       extra_images: (productImages[product.id] || [])
         .filter((image) => image.image_url !== product.image_url)
         .map(formatProductImageInput)
@@ -867,6 +883,16 @@ export default function CustomPanel() {
               />
             </label>
             <label className={labelClass}>Colores separados por coma<input className={fieldClass} value={productForm.colors} onChange={(e) => setProductForm({ ...productForm, colors: e.target.value })} /></label>
+            <fieldset className="rounded-xl border border-primary/25 bg-primary/[0.04] p-4">
+              <legend className="px-2 text-sm font-black uppercase tracking-wider text-primary">Datos para calcular el envío</legend>
+              <p className="mb-4 text-xs leading-relaxed text-gray-300">Medí el producto ya embalado. Correo Argentino y Andreani usan estos datos para calcular el precio.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={labelClass}>Peso en gramos<input required type="number" min="1" className={fieldClass} value={productForm.weight_grams} onChange={(e) => setProductForm({ ...productForm, weight_grams: e.target.value })} /></label>
+                <label className={labelClass}>Largo en cm<input required type="number" min="1" step="0.1" className={fieldClass} value={productForm.length_cm} onChange={(e) => setProductForm({ ...productForm, length_cm: e.target.value })} /></label>
+                <label className={labelClass}>Ancho en cm<input required type="number" min="1" step="0.1" className={fieldClass} value={productForm.width_cm} onChange={(e) => setProductForm({ ...productForm, width_cm: e.target.value })} /></label>
+                <label className={labelClass}>Alto en cm<input required type="number" min="1" step="0.1" className={fieldClass} value={productForm.height_cm} onChange={(e) => setProductForm({ ...productForm, height_cm: e.target.value })} /></label>
+              </div>
+            </fieldset>
             <label className={`${labelClass} flex items-center gap-3 rounded-md border border-purple-800/50 bg-purple-950/25 p-3`}>
               <input
                 type="checkbox"
@@ -945,10 +971,10 @@ export default function CustomPanel() {
 
             <div className={`${panelClass} overflow-x-auto`}>
               <table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="text-white"><tr><th className="p-2">Producto</th><th className="p-2">Categoria</th><th className="p-2">Modelo</th><th className="p-2">Precio</th><th className="p-2">Stock</th><th className="p-2">Mas vendido</th><th className="p-2">Acciones</th></tr></thead>
+                <thead className="text-white"><tr><th className="p-2">Producto</th><th className="p-2">Categoria</th><th className="p-2">Modelo</th><th className="p-2">Precio</th><th className="p-2">Stock</th><th className="p-2">Paquete</th><th className="p-2">Mas vendido</th><th className="p-2">Acciones</th></tr></thead>
                 <tbody>{filteredProducts.map((product) => (
                   <tr key={product.id} className="border-t border-white/10 text-gray-200">
-                    <td className="p-2">{product.name}</td><td className="p-2">{product.category}</td><td className="p-2">{product.motorcycle_model || 'Sin modelo'}</td><td className="p-2 text-white">{product.price > 0 ? formatARS(Math.round(product.price)) : 'Consultar precio'}</td><td className="p-2">{product.stock}</td><td className="p-2">{product.is_best_seller ? 'Si' : 'No'}</td>
+                    <td className="p-2">{product.name}</td><td className="p-2">{product.category}</td><td className="p-2">{product.motorcycle_model || 'Sin modelo'}</td><td className="p-2 text-white">{product.price > 0 ? formatARS(Math.round(product.price)) : 'Consultar precio'}</td><td className="p-2">{product.stock}</td><td className="p-2 text-xs">{product.weight_grams || 500} g<br />{product.length_cm || 20}×{product.width_cm || 15}×{product.height_cm || 10} cm</td><td className="p-2">{product.is_best_seller ? 'Si' : 'No'}</td>
                     <td className="flex gap-2 p-2"><button onClick={() => editProduct(product)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button><button onClick={() => deleteProduct(product.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button></td>
                   </tr>
                 ))}</tbody>

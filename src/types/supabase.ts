@@ -11,6 +11,10 @@
   created_at: string;
   category_id?: string;
   colors?: string[] | null;
+  weight_grams?: number;
+  length_cm?: number;
+  width_cm?: number;
+  height_cm?: number;
 };
 
 export type CartItem = {
