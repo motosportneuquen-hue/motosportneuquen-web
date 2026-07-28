@@ -17,6 +17,7 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
   const [isInCart, setIsInCart] = useState(false);
   const navigate = useNavigate();
   const isOnRequest = product.price <= 0;
+  const isDemo = product.id.startsWith('demo-');
 
   useEffect(() => {
     setIsInCart(cartItems.some((item: { product_id: string }) => item.product_id === product.id));
@@ -25,7 +26,7 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    if (isOnRequest) {
+    if (isOnRequest || isDemo) {
       const message = `Hola MotoSport Neuquén, quiero consultar por ${product.name}. Modelo de moto: _____.`;
       window.open(`https://wa.me/5492995343094?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
       return;
@@ -38,7 +39,10 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
     onAddToCart(product);
   };
 
-  const openProductDetail = () => navigate(`/products/${product.id}`);
+  const openProductDetail = () => {
+    if (isDemo) return;
+    navigate(`/products/${product.id}`);
+  };
 
   return (
     <article

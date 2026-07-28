@@ -7,6 +7,7 @@ import { formatARS } from '../lib/currency';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
 import { Product } from '../types/supabase';
+import { demoProducts } from '../data/demoProducts';
 
 const motoModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
 
@@ -95,8 +96,19 @@ export default function ProductsPage() {
     else query = query.order('category', { ascending: true }).order('name', { ascending: true });
 
     const { data, error } = await query;
-    if (error) console.error(error);
-    else setProducts(data || []);
+    if (error) {
+      console.error(error);
+    } else {
+      const normalizedSearch = searchQuery.toLocaleLowerCase('es');
+      const matchingDemoProducts = demoProducts.filter((product) => {
+        const matchesCategory = !selectedCategory || product.category === selectedCategory;
+        const matchesModel = !selectedModel || product.motorcycle_model === selectedModel;
+        const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
+        const matchesSearch = !normalizedSearch || product.name.toLocaleLowerCase('es').includes(normalizedSearch);
+        return matchesCategory && matchesModel && matchesPrice && matchesSearch;
+      });
+      setProducts([...(data || []), ...matchingDemoProducts]);
+    }
     setLoading(false);
   }, [priceRange, searchQuery, selectedCategory, selectedModel, sortBy]);
 
@@ -113,7 +125,12 @@ export default function ProductsPage() {
       setCategories([...new Set((categoryData || []).map((item) => item.name))].filter((category) => usedCategories.has(category)));
 
       if (prices?.length) {
-        const highestPrice = Math.ceil(prices[0].price);
+        const highestDemoPrice = Math.max(...demoProducts.map((product) => product.price));
+        const highestPrice = Math.ceil(Math.max(prices[0].price, highestDemoPrice));
+        setMaxPrice(highestPrice);
+        setPriceRange([0, highestPrice]);
+      } else {
+        const highestPrice = Math.max(...demoProducts.map((product) => product.price));
         setMaxPrice(highestPrice);
         setPriceRange([0, highestPrice]);
       }
