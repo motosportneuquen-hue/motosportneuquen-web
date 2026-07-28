@@ -128,9 +128,9 @@ const emptyCategory: CategoryForm = {
   orden: '0',
 };
 
-const fieldClass = 'w-full rounded-md border border-white/35 bg-black/60 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-white focus:outline-none';
-const labelClass = 'text-sm font-semibold text-gray-200';
-const panelClass = 'rounded-lg border border-white/30 bg-black/60 p-4 backdrop-blur-sm';
+const fieldClass = 'mt-1.5 min-h-11 w-full rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2.5 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-primary/60 focus:bg-white/[0.055]';
+const labelClass = 'block text-xs font-bold uppercase tracking-[0.08em] text-white/60';
+const panelClass = 'rounded-xl border border-white/[0.08] bg-[#111] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.16)]';
 const sharedBrandImage = '/branding/motosport-neuquen-logo.png';
 const motorcycleModels = ['110cc', 'CG / Titan / S2', 'Tornado / XR', 'Skua', 'Rouser', 'Twister', 'Wave / Biz', 'Motomel / Corven / Zanella'];
 
@@ -783,7 +783,7 @@ export default function CustomPanel() {
         <div className={panelClass}>
           <h1 className="font-brand text-3xl text-white">Panel administrador</h1>
           <p className="mt-3 text-gray-200">Tenes que iniciar sesion para administrar la tienda.</p>
-          <Link to="/auth" className="mt-5 inline-flex rounded-md bg-white px-4 py-2 font-bold text-white">
+          <Link to="/auth" className="mt-5 inline-flex rounded-lg bg-primary px-5 py-2.5 font-bold text-black">
             Ingresar
           </Link>
         </div>
@@ -808,28 +808,28 @@ export default function CustomPanel() {
   }
 
   return (
-    <section className="container py-10 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <section className="container space-y-7 py-8 sm:py-12">
+      <div className="flex flex-col gap-4 border-b border-white/[0.08] pb-7 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-widest text-white">MotoSport Neuquén</p>
-          <h1 className="font-brand text-3xl text-white md:text-4xl">Panel administrador</h1>
-          <p className="mt-2 text-gray-300">Administra productos y deudores guardados en Supabase.</p>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">MotoSport Neuquén</p>
+          <h1 className="mt-2 text-3xl font-black text-white md:text-4xl">Administración</h1>
+          <p className="mt-2 text-sm text-white/45">Productos, categorías, reseñas y cuentas en un solo lugar.</p>
         </div>
-        <button onClick={loadData} className="inline-flex items-center gap-2 rounded-md border border-white/50 bg-white/10 px-4 py-2 text-sm font-bold text-white">
+        <button onClick={loadData} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white transition hover:border-primary/40">
           <RefreshCw className="h-4 w-4" />
           Actualizar
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className={panelClass}><p className="text-gray-400">Productos</p><p className="text-3xl font-black text-white">{products.length}</p></div>
-        <div className={panelClass}><p className="text-gray-400">Deudores</p><p className="text-3xl font-black text-white">{pendingDebtors.length}</p></div>
-        <div className={panelClass}><p className="text-gray-400">Stock total</p><p className="text-3xl font-black text-white">{stats.totalStock}</p></div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Productos</p><p className="mt-2 text-3xl font-black text-white">{products.length}</p></div>
+        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Deudores pendientes</p><p className="mt-2 text-3xl font-black text-secondary">{pendingDebtors.length}</p></div>
+        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Unidades en stock</p><p className="mt-2 text-3xl font-black text-primary">{stats.totalStock}</p></div>
       </div>
 
-      {message ? <div className="rounded-md border border-white/35 bg-white/10 p-3 text-gray-100">{message}</div> : null}
+      {message ? <div className="rounded-lg border border-primary/25 bg-primary/[0.06] p-3 text-sm text-white">{message}</div> : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#101010] p-1.5">
         {[
           ['products', 'Productos'],
           ['categories', 'Categorias'],
@@ -839,7 +839,7 @@ export default function CustomPanel() {
           <button
             key={id}
             onClick={() => setActiveTab(id as typeof activeTab)}
-            className={`rounded-md border px-4 py-2 text-sm font-bold ${activeTab === id ? 'border-white bg-white/25 text-white' : 'border-white/15 bg-black/40 text-gray-300'}`}
+            className={`min-h-10 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === id ? 'bg-primary text-black' : 'text-white/55 hover:bg-white/[0.05] hover:text-white'}`}
           >
             {label}
           </button>
@@ -847,7 +847,7 @@ export default function CustomPanel() {
       </div>
 
       {activeTab === 'products' ? (
-        <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+        <div className="grid items-start gap-6 lg:grid-cols-[390px_1fr]">
           <form onSubmit={saveProduct} className={`${panelClass} space-y-3`}>
             <h2 className="text-xl font-bold text-white">{productForm.id ? 'Editar producto' : 'Nuevo producto'}</h2>
             <label className={labelClass}>Nombre<input required className={fieldClass} value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} /></label>
@@ -917,7 +917,7 @@ export default function CustomPanel() {
               />
             </label>
             <div className="flex gap-2">
-              <button disabled={saving || uploading} className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 font-bold text-white disabled:opacity-60">
+              <button disabled={saving || uploading} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-60">
                 <Save className="h-4 w-4" />
                 {uploading ? 'Subiendo...' : 'Guardar'}
               </button>
@@ -1095,7 +1095,7 @@ export default function CustomPanel() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button disabled={saving} className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 font-bold text-white"><Save className="h-4 w-4" />Guardar deudor</button>
+              <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black"><Save className="h-4 w-4" />Guardar deudor</button>
               <button type="button" onClick={() => setDebtorForm(emptyDebtor)} className="rounded-md border border-white/20 px-4 py-2 text-gray-200">Limpiar</button>
             </div>
           </form>

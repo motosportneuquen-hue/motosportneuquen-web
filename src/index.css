@@ -45,6 +45,7 @@
     color: #fff;
     font-family: 'Rajdhani', sans-serif;
     -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
   }
 
   ::selection {
@@ -55,7 +56,7 @@
 
 @layer components {
   .container {
-    @apply mx-auto max-w-7xl px-4;
+    @apply mx-auto max-w-7xl px-4 sm:px-6;
   }
 
   .font-brand {
@@ -77,7 +78,7 @@
   }
 
   .card {
-    @apply rounded-2xl border border-white/10 bg-[#101010] p-5 text-white;
+    @apply rounded-xl border border-white/[0.08] bg-[#111] p-5 text-white;
   }
 
   .gradient-primary {
@@ -129,55 +130,19 @@ select {
   color-scheme: dark;
 }
 
-.bg-white,
-.dark\:bg-gray-800,
-.dark\:bg-gray-700 {
-  background-color: #101010 !important;
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
 }
 
-.text-gray-900,
-.text-gray-800,
-.text-gray-700,
-.text-gray-600,
-.text-gray-500,
-.text-gray-400,
-.text-black,
-.dark\:text-white,
-.dark\:text-gray-300 {
-  color: #fff !important;
-}
-
-.text-primary,
-.hover\:text-primary:hover {
-  color: #72f51d !important;
-}
-
-.bg-primary {
-  background-color: #55e600 !important;
-  color: #050505 !important;
-}
-
-.border-primary,
-.border-primary\/30,
-.border-primary\/40 {
-  border-color: rgba(85, 230, 0, 0.48) !important;
-}
-
-.text-purple-600,
-.text-purple-500,
-.text-purple-400,
-.text-purple-300,
-.dark\:text-purple-400 {
-  color: #d946ef !important;
-}
-
-.bg-purple-600,
-.bg-purple-500 {
-  background-color: #b900e6 !important;
-  color: #fff !important;
-}
-
-.focus\:ring-primary:focus,
-.focus\:ring-purple-500:focus {
-  --tw-ring-color: rgba(85, 230, 0, 0.55) !important;
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #55e600;
+  outline-offset: 2px;
 }

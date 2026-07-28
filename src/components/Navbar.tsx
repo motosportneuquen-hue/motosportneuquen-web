@@ -42,18 +42,18 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#080808]/95 text-white backdrop-blur-xl">
-      <div className="bg-primary px-4 py-2 text-center text-[11px] font-black uppercase tracking-[0.2em] text-black sm:text-xs">
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#080808]/95 text-white backdrop-blur-xl">
+      <div className="bg-primary px-4 py-1.5 text-center text-[10px] font-black uppercase tracking-[0.18em] text-black sm:text-[11px]">
         Envíos a todo el país <span className="mx-2 opacity-40">•</span> Atención personalizada
       </div>
 
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 lg:gap-8 lg:py-4">
-        <Link to="/" className="flex h-12 w-24 shrink-0 items-center justify-center" aria-label="Ir al inicio de MotoSport Neuquén">
-          <span className="relative block h-12 w-24">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6 lg:gap-8">
+        <Link to="/" className="flex h-11 w-24 shrink-0 items-center justify-center overflow-hidden" aria-label="Ir al inicio de MotoSport Neuquén">
+          <span className="relative block h-11 w-24">
             <img
               src="/branding/motosport-neuquen-logo.png"
               alt="MotoSport Neuquén"
-              className="absolute -top-[18px] left-1/2 w-24 max-w-none -translate-x-1/2 mix-blend-screen"
+              className="absolute left-1/2 top-1/2 w-[92px] max-w-none -translate-x-1/2 -translate-y-1/2 object-contain mix-blend-screen"
             />
           </span>
         </Link>
@@ -64,12 +64,12 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="¿Qué repuesto estás buscando?"
-              className="h-12 w-full rounded-full border border-white/15 bg-white/[0.06] px-5 pr-12 text-sm text-white outline-none transition focus:border-primary/70 focus:bg-white/[0.09] focus:ring-2 focus:ring-primary/15"
+              className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.045] px-4 pr-12 text-sm text-white outline-none transition focus:border-primary/60 focus:bg-white/[0.07]"
             />
             <button
               type="submit"
               aria-label="Buscar productos"
-              className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-black transition hover:bg-lime-300"
+              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md bg-primary text-black transition hover:bg-lime-300"
             >
               <Search className="h-4 w-4" />
             </button>
@@ -123,13 +123,13 @@ export default function Navbar() {
         </div>
       </div>
 
-      <nav className="hidden border-t border-white/[0.08] lg:block">
+      <nav className="hidden border-t border-white/[0.06] lg:block">
         <div className="mx-auto flex max-w-7xl items-center justify-center gap-10 px-4">
           {links.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className={`relative py-3 text-xs font-black uppercase tracking-[0.15em] transition ${
+              className={`relative py-2.5 text-[11px] font-bold uppercase tracking-[0.15em] transition ${
                 location.pathname === link.to ? 'text-primary' : 'text-white/70 hover:text-white'
               }`}
             >

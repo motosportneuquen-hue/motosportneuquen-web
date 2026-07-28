@@ -21,12 +21,12 @@ export default function Home() {
     <div className="pb-20">
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_45%,rgba(185,0,230,0.16),transparent_32%),radial-gradient(circle_at_12%_5%,rgba(85,230,0,0.10),transparent_28%)]" />
-        <div className="relative mx-auto grid min-h-[590px] max-w-7xl items-center gap-10 px-4 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <div className="relative mx-auto grid min-h-[520px] max-w-7xl items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:py-20">
           <div className="max-w-2xl">
             <p className="mb-5 flex items-center gap-3 text-xs font-black uppercase tracking-[0.25em] text-primary">
               <span className="h-px w-10 bg-primary" /> Moto repuestos en Neuquén
             </p>
-            <h1 className="text-balance text-5xl font-black uppercase leading-[0.92] tracking-[-0.04em] text-white sm:text-6xl lg:text-8xl">
+            <h1 className="text-balance text-5xl font-black uppercase leading-[0.94] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
               Tu moto.
               <span className="block text-primary">A tu manera.</span>
             </h1>
@@ -43,20 +43,20 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative mx-auto flex aspect-square w-full max-w-[500px] items-center justify-center">
+          <div className="relative mx-auto hidden aspect-square w-full max-w-[390px] items-center justify-center lg:flex">
             <div className="absolute h-[76%] w-[76%] rounded-full border border-primary/20 bg-primary/[0.04]" />
             <div className="absolute h-[94%] w-[94%] rounded-full border border-secondary/20" />
             <div className="absolute left-[6%] top-[15%] h-3 w-3 rounded-full bg-primary shadow-[0_0_24px_#55e600]" />
             <div className="absolute bottom-[10%] right-[10%] h-4 w-4 rounded-full bg-secondary shadow-[0_0_26px_#b900e6]" />
-            <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="relative z-10 w-[88%] mix-blend-screen drop-shadow-[0_28px_65px_rgba(0,0,0,0.8)]" />
+            <img src="/branding/motosport-neuquen-logo.png" alt="MotoSport Neuquén" className="relative z-10 w-[78%] mix-blend-screen drop-shadow-[0_20px_50px_rgba(0,0,0,0.65)]" />
           </div>
         </div>
       </section>
 
       <section className="border-b border-white/10 bg-white/[0.025]">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-white/10 px-4 sm:grid-cols-4 sm:divide-y-0">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y divide-white/[0.07] px-4 sm:grid-cols-2 sm:divide-x lg:grid-cols-4 lg:divide-y-0">
           {benefits.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="flex gap-3 px-3 py-6 sm:px-5">
+            <div key={title} className="flex gap-3 px-3 py-5 sm:px-5">
               <Icon className="h-6 w-6 shrink-0 text-primary" />
               <div>
                 <p className="text-sm font-black text-white">{title}</p>
@@ -67,7 +67,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:py-24">
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
         <div className="mb-9 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.24em] text-secondary">Encontrá lo tuyo</p>
@@ -82,7 +82,7 @@ export default function Home() {
             <Link
               key={category.name}
               to={`/products?category=${encodeURIComponent(category.name)}`}
-              className="group relative min-h-56 overflow-hidden rounded-2xl border border-white/10 bg-[#111] p-6 transition hover:-translate-y-1 hover:border-primary/45"
+              className="group relative min-h-52 overflow-hidden rounded-xl border border-white/[0.08] bg-[#101010] p-6 transition hover:-translate-y-0.5 hover:border-primary/35"
             >
               <span className="text-7xl font-black text-white/[0.035]">0{index + 1}</span>
               <div className="absolute inset-x-6 bottom-6">
