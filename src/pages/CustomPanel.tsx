@@ -1,11 +1,12 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
+import { BarChart3, CheckCircle, Download, Edit, PackageCheck, RefreshCw, Save, Search, Trash2, Truck } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
 import { formatARS } from '../lib/currency';
+import { calculateOrderMetrics } from '../lib/orderMetrics';
 
 type ProductForm = {
   id?: string;
@@ -313,7 +314,7 @@ function findMatchingProduct(row: BulkProductRow, productsByName: Map<string, Pr
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -341,10 +342,8 @@ export default function CustomPanel() {
   const isAdmin = Boolean(profile?.is_admin);
 
   const stats = useMemo(() => {
-    const totalStock = products.reduce((sum, product) => sum + Number(product.stock || 0), 0);
-    const lowStock = products.filter((product) => Number(product.stock || 0) <= 3).length;
-    return { totalStock, lowStock };
-  }, [products]);
+    return calculateOrderMetrics(orders, products.map((product) => Number(product.stock || 0)));
+  }, [orders, products]);
 
   const sortedProducts = useMemo(() => {
     return [...products].sort((a, b) => {
@@ -996,6 +995,7 @@ export default function CustomPanel() {
 
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#101010] p-1.5">
         {[
+          ['metrics', 'Métricas'],
           ['orders', 'Pedidos'],
           ['offers', 'Ofertas'],
           ['products', 'Productos'],
@@ -1011,6 +1011,64 @@ export default function CustomPanel() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'metrics' ? (
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              ['Ventas entregadas', formatARS(Math.round(stats.totalRevenue)), 'Total histórico confirmado'],
+              ['Ventas del mes', formatARS(Math.round(stats.monthlyRevenue)), `${stats.monthlyOrders} pedidos no cancelados`],
+              ['Ticket promedio', formatARS(Math.round(stats.averageTicket)), 'Promedio por pedido'],
+              ['Stock bajo', String(stats.lowStock), 'Productos con 3 unidades o menos'],
+            ].map(([label, value, hint]) => (
+              <div key={label} className={panelClass}>
+                <p className="text-[11px] font-black uppercase tracking-wider text-white/40">{label}</p>
+                <p className="mt-2 break-words text-2xl font-black text-primary">{value}</p>
+                <p className="mt-1 text-xs text-white/35">{hint}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className={panelClass}>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-black text-white">Estado de pedidos</h2>
+              </div>
+              <div className="mt-5 space-y-3">
+                {orderStatuses.map(([status, label]) => {
+                  const amount = orders.filter((order) => order.status === status).length;
+                  const width = orders.length ? Math.max((amount / orders.length) * 100, amount ? 4 : 0) : 0;
+                  return (
+                    <div key={status}>
+                      <div className="mb-1.5 flex justify-between text-sm">
+                        <span className="text-white/60">{label}</span>
+                        <span className="font-black text-white">{amount}</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={panelClass}>
+              <h2 className="text-lg font-black text-white">Productos más vendidos</h2>
+              <p className="mt-1 text-xs text-white/40">No incluye pedidos cancelados.</p>
+              <div className="mt-4 divide-y divide-white/[0.06]">
+                {stats.topProducts.length ? stats.topProducts.map(([name, quantity], index) => (
+                  <div key={name} className="flex items-center justify-between gap-4 py-3 text-sm">
+                    <span className="min-w-0 text-white/70"><b className="mr-2 text-primary">#{index + 1}</b>{name}</span>
+                    <span className="shrink-0 font-black text-white">{quantity} unidades</span>
+                  </div>
+                )) : <p className="py-8 text-center text-sm text-white/35">Todavía no hay ventas para comparar.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {activeTab === 'offers' ? (
         <div className="grid items-start gap-6 lg:grid-cols-[380px_1fr]">
