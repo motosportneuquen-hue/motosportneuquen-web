@@ -25,7 +25,7 @@ export default function Footer() {
             <ul className="mt-5 space-y-3 text-sm text-white/45">
               <li><Link to="/products" className="hover:text-primary">Productos</Link></li>
               <li><Link to="/offers" className="hover:text-primary">Ofertas</Link></li>
-              <li><Link to="/cart" className="hover:text-primary">Carrito</Link></li>
+              <li><Link to="/cart" className="hover:text-primary">Bolsa</Link></li>
               <li><Link to="/orders" className="hover:text-primary">Mi pedido</Link></li>
             </ul>
           </div>

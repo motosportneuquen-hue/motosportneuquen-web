@@ -56,6 +56,7 @@ export default function Cart() {
   const shipping = selectedShipping?.price || 0;
   const total = subtotal + shipping;
   const hasPendingPrices = cartItems.some((item) => item.price <= 0);
+  const hasDemoItems = cartItems.some((item) => item.product_id.startsWith('demo-'));
 
   const formatItemPrice = (price: number) =>
     price > 0 ? formatARS(Math.round(price)) : 'Precio a confirmar';
@@ -119,7 +120,7 @@ export default function Cart() {
     setSubmitting(true);
     setCheckoutMessage('');
 
-    if (isSupabaseConfigured) {
+    if (isSupabaseConfigured && !hasDemoItems) {
       const orderItems = cartItems.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
@@ -181,12 +182,12 @@ export default function Cart() {
 
   return (
     <section className="container py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">Tu carrito</h1>
+      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">Tu bolsa</h1>
 
       {cartItems.length === 0 ? (
         <div className="bg-black/55 backdrop-blur-sm p-8 rounded-lg border border-primary/30 text-center">
           <ShoppingCart className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-300 text-lg mb-6">Tu carrito esta vacio.</p>
+          <p className="text-gray-300 text-lg mb-6">Tu bolsa está vacía.</p>
           <Link
             to="/products"
           className="inline-block px-6 py-2 bg-black text-white rounded-md hover:bg-white hover:text-black transition-colors btn-hover-scale btn-hover-shadow"
@@ -228,7 +229,7 @@ export default function Cart() {
                 </div>
                 <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-end">
                   <p className="font-semibold text-white mb-2">{formatItemPrice(item.price * item.quantity)}</p>
-                  <button onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} del carrito`} className="flex h-11 w-11 items-center justify-center text-purple-400 transition-colors hover:text-gray-300">
+                  <button onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} de la bolsa`} className="flex h-11 w-11 items-center justify-center text-purple-400 transition-colors hover:text-gray-300">
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
@@ -351,7 +352,7 @@ export default function Cart() {
               onClick={clearCart}
               className="w-full mt-3 flex items-center justify-center bg-gray-800 text-gray-200 px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
             >
-              Vaciar carrito
+              Vaciar bolsa
             </button>
           </div>
         </div>

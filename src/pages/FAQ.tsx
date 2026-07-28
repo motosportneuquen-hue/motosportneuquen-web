@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 
 const questions = [
-  { question: '¿Como hago un pedido?', answer: 'Agrega los productos al carrito y selecciona Comprar por WhatsApp. Recibiremos el detalle para coordinar la compra.' },
+  { question: '¿Como hago un pedido?', answer: 'Agrega los productos a la bolsa y selecciona Comprar por WhatsApp. Recibiremos el detalle para coordinar la compra.' },
   { question: '¿Que significa “Precio a confirmar”?', answer: 'El valor se consulta antes de cerrar el pedido. No se cobra ni se confirma un total de $0.' },
   { question: '¿Como confirmo que el repuesto sirve para mi moto?', answer: 'Envianos por WhatsApp marca, modelo, cilindrada y año. Si hace falta, tambien podes adjuntar una foto del repuesto.' },
   { question: '¿Que formas de pago ofrecen?', answer: 'Los pedidos pueden coordinarse con pago en efectivo o transferencia.' },

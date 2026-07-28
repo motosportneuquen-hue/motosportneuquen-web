@@ -26,7 +26,7 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    if (isOnRequest || isDemo) {
+    if (isOnRequest) {
       const message = `Hola MotoSport Neuquén, quiero consultar por ${product.name}. Modelo de moto: _____.`;
       window.open(`https://wa.me/5492995343094?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
       return;
@@ -76,7 +76,7 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
           <button
             onClick={handleAddToCart}
             disabled={!isOnRequest && product.stock === 0}
-            aria-label={isOnRequest ? 'Consultar por WhatsApp' : isInCart ? 'Agregar otra unidad' : 'Agregar al carrito'}
+            aria-label={isOnRequest ? 'Consultar por WhatsApp' : isInCart ? 'Agregar otra unidad' : 'Agregar a la bolsa'}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-black transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/30"
           >
             <ShoppingBag className="h-5 w-5" />

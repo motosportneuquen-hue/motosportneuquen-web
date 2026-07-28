@@ -264,7 +264,7 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
                 }`}
               >
                 <ShoppingCart className="w-5 h-5" />
-                <span>{isOnRequest ? 'Consultar por WhatsApp' : product.stock > 0 ? (isInCart ? 'Actualizar carrito' : 'Agregar al carrito') : 'Sin stock'}</span>
+                <span>{isOnRequest ? 'Consultar por WhatsApp' : product.stock > 0 ? (isInCart ? 'Actualizar bolsa' : 'Agregar a la bolsa') : 'Sin stock'}</span>
               </button>
             </div>
           </div>

@@ -108,7 +108,7 @@ export default function Navbar() {
 
           <Link to="/cart" className="relative flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-white/80 transition hover:bg-white/10 hover:text-white">
             <ShoppingBag className="h-5 w-5" />
-            <span className="hidden lg:inline">Carrito</span>
+            <span className="hidden lg:inline">Bolsa</span>
             {itemCount > 0 && (
               <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-black text-white">
                 {itemCount}

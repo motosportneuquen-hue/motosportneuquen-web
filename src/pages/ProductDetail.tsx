@@ -269,7 +269,7 @@ export default function ProductDetail() {
             } transition-colors`}
           >
             <ShoppingCart className="w-5 h-5" />
-            <span>{isOnRequest ? 'Consultar por WhatsApp' : product.stock > 0 ? (addedToCart ? 'Actualizar carrito' : 'Agregar al carrito') : 'Sin stock'}</span>
+            <span>{isOnRequest ? 'Consultar por WhatsApp' : product.stock > 0 ? (addedToCart ? 'Actualizar bolsa' : 'Agregar a la bolsa') : 'Sin stock'}</span>
           </button>
           
           {/* Envio & Returns Info */}

@@ -955,7 +955,7 @@ export default function CustomPanel() {
             <div className={`${panelClass} py-12 text-center`}>
               <PackageCheck className="mx-auto h-10 w-10 text-primary" />
               <p className="mt-4 font-bold text-white">Todavía no hay pedidos.</p>
-              <p className="mt-1 text-sm text-white/45">Cuando alguien compre desde el carrito aparecerá automáticamente.</p>
+              <p className="mt-1 text-sm text-white/45">Cuando alguien compre desde la bolsa aparecerá automáticamente.</p>
             </div>
           ) : null}
 

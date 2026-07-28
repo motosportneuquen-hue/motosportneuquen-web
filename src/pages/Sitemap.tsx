@@ -31,7 +31,7 @@ export default function Sitemap() {
       links: [
         { name: 'Iniciar sesion / Registro', path: '/auth' },
         { name: 'Historial de pedidos', path: '/orders' },
-        { name: 'Carrito', path: '/cart' }
+        { name: 'Bolsa', path: '/cart' }
       ]
     },
     {
@@ -86,7 +86,7 @@ export default function Sitemap() {
           <div className="flex items-center mb-4"><ShoppingCart className="h-6 w-6 text-primary mr-2" /><h2 className="text-xl font-semibold text-gray-900 dark:text-white">Tienda</h2></div>
           <ul className="space-y-2">
             <li><Link to="/products" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Ver todos los productos</Link></li>
-            <li><Link to="/cart" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Carrito</Link></li>
+            <li><Link to="/cart" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Bolsa</Link></li>
           </ul>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
