@@ -76,6 +76,15 @@ type AdminDebtor = {
 type AdminMotorcycleModel = {
   id: string;
   name: string;
+  brand_id?: string | null;
+  activo: boolean;
+  orden: number;
+  created_at: string;
+};
+
+type AdminMotorcycleBrand = {
+  id: string;
+  name: string;
   activo: boolean;
   orden: number;
   created_at: string;
@@ -291,7 +300,10 @@ export default function CustomPanel() {
   const [debtors, setDebtors] = useState<AdminDebtor[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [motorcycleModels, setMotorcycleModels] = useState<AdminMotorcycleModel[]>([]);
+  const [motorcycleBrands, setMotorcycleBrands] = useState<AdminMotorcycleBrand[]>([]);
   const [modelName, setModelName] = useState('');
+  const [modelBrandId, setModelBrandId] = useState('');
+  const [brandName, setBrandName] = useState('');
   const [offers, setOffers] = useState<AdminOffer[]>([]);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [couponForm, setCouponForm] = useState<CouponForm>(emptyCoupon);
@@ -444,7 +456,7 @@ export default function CustomPanel() {
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
 
-    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }, { data: offersData }, { data: couponsData }] = await Promise.all([
+    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }, { data: brandsData }, { data: offersData }, { data: couponsData }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
@@ -452,6 +464,7 @@ export default function CustomPanel() {
       supabase.from('debtors').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*, order_items(id, quantity, price, cost_price, products(name, cost_price))').order('created_at', { ascending: false }),
       supabase.from('motorcycle_models').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
+      supabase.from('motorcycle_brands').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
       supabase.from('offers').select('*, products(*)').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('coupons').select('*').order('created_at', { ascending: false }),
     ]);
@@ -462,6 +475,7 @@ export default function CustomPanel() {
     setDebtors((debtorsData || []) as AdminDebtor[]);
     setOrders((ordersData || []) as AdminOrder[]);
     setMotorcycleModels((modelsData || []) as AdminMotorcycleModel[]);
+    setMotorcycleBrands((brandsData || []) as AdminMotorcycleBrand[]);
     setOffers((offersData || []) as AdminOffer[]);
     setCoupons((couponsData || []) as AdminCoupon[]);
 
@@ -826,14 +840,22 @@ export default function CustomPanel() {
     if (!name) return;
     setSaving(true);
     const nextOrder = motorcycleModels.reduce((max, model) => Math.max(max, Number(model.orden || 0)), 0) + 1;
-    const { error } = await supabase.from('motorcycle_models').insert({ name, activo: true, orden: nextOrder });
+    const { error } = await supabase.from('motorcycle_models').insert({
+      name,
+      brand_id: modelBrandId || null,
+      activo: true,
+      orden: nextOrder,
+    });
     setMessage(error ? `No se pudo crear el modelo: ${error.message}` : 'Modelo agregado correctamente.');
-    if (!error) setModelName('');
+    if (!error) {
+      setModelName('');
+      setModelBrandId('');
+    }
     setSaving(false);
     await loadData();
   };
 
-  const updateMotorcycleModel = async (modelId: string, changes: Partial<Pick<AdminMotorcycleModel, 'name' | 'activo' | 'orden'>>) => {
+  const updateMotorcycleModel = async (modelId: string, changes: Partial<Pick<AdminMotorcycleModel, 'name' | 'brand_id' | 'activo' | 'orden'>>) => {
     setSaving(true);
     const { error } = await supabase.from('motorcycle_models').update(changes).eq('id', modelId);
     setMessage(error ? `No se pudo actualizar el modelo: ${error.message}` : 'Modelo actualizado correctamente.');
@@ -845,6 +867,37 @@ export default function CustomPanel() {
     if (!confirm('¿Seguro que querés borrar este modelo? Los productos existentes conservarán el texto del modelo.')) return;
     const { error } = await supabase.from('motorcycle_models').delete().eq('id', modelId);
     setMessage(error ? `No se pudo borrar el modelo: ${error.message}` : 'Modelo eliminado.');
+    if (!error) await loadData();
+  };
+
+  const createMotorcycleBrand = async (event: FormEvent) => {
+    event.preventDefault();
+    const name = brandName.trim();
+    if (!name) return;
+    setSaving(true);
+    const nextOrder = motorcycleBrands.reduce((max, brand) => Math.max(max, Number(brand.orden || 0)), 0) + 1;
+    const { error } = await supabase.from('motorcycle_brands').insert({ name, activo: true, orden: nextOrder });
+    setMessage(error ? `No se pudo crear la marca: ${error.message}` : 'Marca agregada correctamente.');
+    if (!error) setBrandName('');
+    setSaving(false);
+    await loadData();
+  };
+
+  const updateMotorcycleBrand = async (
+    brandId: string,
+    changes: Partial<Pick<AdminMotorcycleBrand, 'name' | 'activo' | 'orden'>>
+  ) => {
+    setSaving(true);
+    const { error } = await supabase.from('motorcycle_brands').update(changes).eq('id', brandId);
+    setMessage(error ? `No se pudo actualizar la marca: ${error.message}` : 'Marca actualizada correctamente.');
+    setSaving(false);
+    if (!error) await loadData();
+  };
+
+  const deleteMotorcycleBrand = async (brandId: string) => {
+    if (!confirm('¿Seguro que querés borrar esta marca? Sus modelos quedarán sin marca asignada.')) return;
+    const { error } = await supabase.from('motorcycle_brands').delete().eq('id', brandId);
+    setMessage(error ? `No se pudo borrar la marca: ${error.message}` : 'Marca eliminada.');
     if (!error) await loadData();
   };
 
@@ -1792,80 +1845,145 @@ export default function CustomPanel() {
       ) : null}
 
       {activeTab === 'models' ? (
-        <div className="grid items-start gap-6 lg:grid-cols-[360px_1fr]">
-          <form onSubmit={createMotorcycleModel} className={`${panelClass} space-y-4`}>
-            <div>
-              <h2 className="text-xl font-black text-white">Nuevo modelo de moto</h2>
-              <p className="mt-1 text-sm text-white/45">Aparecerá en los filtros de la tienda y al cargar productos.</p>
-            </div>
-            <label className={labelClass}>
-              Nombre del modelo
-              <input
-                required
-                value={modelName}
-                onChange={(event) => setModelName(event.target.value)}
-                className={fieldClass}
-                placeholder="Ej: Honda Tornado 250"
-              />
-            </label>
-            <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-50">
-              <Save className="h-4 w-4" /> Agregar modelo
-            </button>
-          </form>
-
-          <div className={`${panelClass} space-y-3`}>
-            <div>
-              <h2 className="text-xl font-black text-white">Modelos disponibles</h2>
-              <p className="mt-1 text-sm text-white/45">Podés renombrar, ordenar, ocultar o eliminar cada opción.</p>
-            </div>
-            {motorcycleModels.length === 0 ? (
-              <p className="rounded-lg border border-white/[0.08] bg-black/20 p-4 text-sm text-white/50">
-                Ejecutá la migración de modelos en Supabase para comenzar a administrarlos.
-              </p>
-            ) : null}
-            {motorcycleModels.map((model) => (
-              <div key={model.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 sm:grid-cols-[1fr_90px_auto_auto] sm:items-end">
-                <label className={labelClass}>
-                  Modelo
-                  <input
-                    defaultValue={model.name}
-                    className={fieldClass}
-                    onBlur={(event) => {
-                      const name = event.target.value.trim();
-                      if (name && name !== model.name) updateMotorcycleModel(model.id, { name });
-                    }}
-                  />
-                </label>
-                <label className={labelClass}>
-                  Orden
-                  <input
-                    type="number"
-                    min="0"
-                    defaultValue={model.orden}
-                    className={fieldClass}
-                    onBlur={(event) => {
-                      const orden = Number(event.target.value);
-                      if (orden !== model.orden) updateMotorcycleModel(model.id, { orden });
-                    }}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => updateMotorcycleModel(model.id, { activo: !model.activo })}
-                  className={`min-h-11 rounded-lg border px-4 text-sm font-bold ${model.activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-white/10 text-white/45'}`}
-                >
-                  {model.activo ? 'Visible' : 'Oculto'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deleteMotorcycleModel(model.id)}
-                  aria-label={`Eliminar ${model.name}`}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-secondary/25 bg-secondary/10 text-secondary"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+        <div className="space-y-6">
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            <form onSubmit={createMotorcycleBrand} className={`${panelClass} space-y-4`}>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-secondary">Marcas</p>
+                <h2 className="mt-1 text-xl font-black text-white">Nueva marca</h2>
+                <p className="mt-1 text-sm text-white/45">Se utilizará para ordenar los modelos en el selector de la tienda.</p>
               </div>
-            ))}
+              <label className={labelClass}>
+                Nombre de la marca
+                <input required value={brandName} onChange={(event) => setBrandName(event.target.value)} className={fieldClass} placeholder="Ej: Honda" />
+              </label>
+              <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-secondary px-5 py-2 font-black text-white disabled:opacity-50">
+                <Save className="h-4 w-4" /> Agregar marca
+              </button>
+            </form>
+
+            <form onSubmit={createMotorcycleModel} className={`${panelClass} space-y-4`}>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">Modelos</p>
+                <h2 className="mt-1 text-xl font-black text-white">Nuevo modelo de moto</h2>
+                <p className="mt-1 text-sm text-white/45">Aparecerá en los filtros de la tienda y al cargar productos.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className={labelClass}>
+                  Marca
+                  <select value={modelBrandId} onChange={(event) => setModelBrandId(event.target.value)} className={fieldClass}>
+                    <option value="">Sin marca específica</option>
+                    {motorcycleBrands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                  </select>
+                </label>
+                <label className={labelClass}>
+                  Nombre del modelo
+                  <input required value={modelName} onChange={(event) => setModelName(event.target.value)} className={fieldClass} placeholder="Ej: Tornado 250" />
+                </label>
+              </div>
+              <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-black text-black disabled:opacity-50">
+                <Save className="h-4 w-4" /> Agregar modelo
+              </button>
+            </form>
+          </div>
+
+          <div className="grid items-start gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+            <div className={`${panelClass} space-y-3`}>
+              <div>
+                <h2 className="text-xl font-black text-white">Marcas disponibles</h2>
+                <p className="mt-1 text-sm text-white/45">Editá el nombre, el orden o la visibilidad.</p>
+              </div>
+              {motorcycleBrands.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-secondary/20 bg-secondary/[0.04] p-4 text-sm text-white/50">
+                  Ejecutá la migración de marcas en Supabase para habilitar esta sección.
+                </p>
+              ) : null}
+              {motorcycleBrands.map((brand) => (
+                <div key={brand.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 sm:grid-cols-[1fr_80px_auto_auto] sm:items-end">
+                  <label className={labelClass}>
+                    Marca
+                    <input
+                      defaultValue={brand.name}
+                      className={fieldClass}
+                      onBlur={(event) => {
+                        const name = event.target.value.trim();
+                        if (name && name !== brand.name) updateMotorcycleBrand(brand.id, { name });
+                      }}
+                    />
+                  </label>
+                  <label className={labelClass}>
+                    Orden
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={brand.orden}
+                      className={fieldClass}
+                      onBlur={(event) => {
+                        const orden = Number(event.target.value);
+                        if (orden !== brand.orden) updateMotorcycleBrand(brand.id, { orden });
+                      }}
+                    />
+                  </label>
+                  <button type="button" onClick={() => updateMotorcycleBrand(brand.id, { activo: !brand.activo })} className={`min-h-11 rounded-lg border px-3 text-sm font-bold ${brand.activo ? 'border-secondary/35 bg-secondary/10 text-fuchsia-300' : 'border-white/10 text-white/45'}`}>
+                    {brand.activo ? 'Visible' : 'Oculta'}
+                  </button>
+                  <button type="button" onClick={() => deleteMotorcycleBrand(brand.id)} aria-label={`Eliminar ${brand.name}`} className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-500/25 bg-red-500/10 text-red-300">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className={`${panelClass} space-y-3`}>
+              <div>
+                <h2 className="text-xl font-black text-white">Modelos disponibles</h2>
+                <p className="mt-1 text-sm text-white/45">Renombrá, asigná una marca, ordená, ocultá o eliminá cada modelo.</p>
+              </div>
+              {motorcycleModels.length === 0 ? (
+                <p className="rounded-lg border border-white/[0.08] bg-black/20 p-4 text-sm text-white/50">No hay modelos cargados.</p>
+              ) : null}
+              {motorcycleModels.map((model) => (
+                <div key={model.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 md:grid-cols-[1fr_170px_76px_auto_auto] md:items-end">
+                  <label className={labelClass}>
+                    Modelo
+                    <input
+                      defaultValue={model.name}
+                      className={fieldClass}
+                      onBlur={(event) => {
+                        const name = event.target.value.trim();
+                        if (name && name !== model.name) updateMotorcycleModel(model.id, { name });
+                      }}
+                    />
+                  </label>
+                  <label className={labelClass}>
+                    Marca
+                    <select value={model.brand_id || ''} onChange={(event) => updateMotorcycleModel(model.id, { brand_id: event.target.value || null })} className={fieldClass}>
+                      <option value="">Sin marca</option>
+                      {motorcycleBrands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                    </select>
+                  </label>
+                  <label className={labelClass}>
+                    Orden
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={model.orden}
+                      className={fieldClass}
+                      onBlur={(event) => {
+                        const orden = Number(event.target.value);
+                        if (orden !== model.orden) updateMotorcycleModel(model.id, { orden });
+                      }}
+                    />
+                  </label>
+                  <button type="button" onClick={() => updateMotorcycleModel(model.id, { activo: !model.activo })} className={`min-h-11 rounded-lg border px-3 text-sm font-bold ${model.activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-white/10 text-white/45'}`}>
+                    {model.activo ? 'Visible' : 'Oculto'}
+                  </button>
+                  <button type="button" onClick={() => deleteMotorcycleModel(model.id)} aria-label={`Eliminar ${model.name}`} className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-500/25 bg-red-500/10 text-red-300">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}

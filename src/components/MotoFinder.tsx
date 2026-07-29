@@ -1,8 +1,9 @@
 import { ArrowRight, Bike, ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
-const modelsByBrand: Record<string, string[]> = {
+const defaultModelsByBrand: Record<string, string[]> = {
   Honda: ['CG / Titan / S2', 'Tornado / XR', 'Twister', 'Wave / Biz'],
   Bajaj: ['Rouser'],
   Motomel: ['110cc', 'Skua', 'Motomel / Corven / Zanella'],
@@ -13,8 +14,31 @@ const modelsByBrand: Record<string, string[]> = {
 export default function MotoFinder() {
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
+  const [modelsByBrand, setModelsByBrand] = useState<Record<string, string[]>>(defaultModelsByBrand);
   const navigate = useNavigate();
-  const models = useMemo(() => modelsByBrand[brand] || [], [brand]);
+  const models = useMemo(() => modelsByBrand[brand] || [], [brand, modelsByBrand]);
+
+  useEffect(() => {
+    async function loadBrandsAndModels() {
+      if (!isSupabaseConfigured) return;
+      const [{ data: brands, error: brandsError }, { data: models, error: modelsError }] = await Promise.all([
+        supabase.from('motorcycle_brands').select('id, name').eq('activo', true).order('orden', { ascending: true }),
+        supabase.from('motorcycle_models').select('name, brand_id').eq('activo', true).order('orden', { ascending: true }),
+      ]);
+
+      if (brandsError || modelsError || !brands?.length) return;
+
+      const dynamicModels = Object.fromEntries(
+        brands.map((item) => [
+          item.name,
+          (models || []).filter((modelItem) => modelItem.brand_id === item.id).map((modelItem) => modelItem.name),
+        ])
+      );
+      setModelsByBrand(dynamicModels);
+    }
+
+    loadBrandsAndModels();
+  }, []);
 
   const findProducts = () => {
     if (!model) return;
