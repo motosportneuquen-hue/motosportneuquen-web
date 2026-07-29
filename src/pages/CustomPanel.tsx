@@ -308,6 +308,8 @@ export default function CustomPanel() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+  const [costProductSearch, setCostProductSearch] = useState('');
+  const [costCategoryFilter, setCostCategoryFilter] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [message, setMessage] = useState('');
 
@@ -376,6 +378,22 @@ export default function CustomPanel() {
       normalizeMatch(`${product.name} ${product.category} ${product.motorcycle_model || ''} ${product.description || ''}`).includes(search)
     );
   }, [productSearch, sortedProducts]);
+
+  const costCategoryOptions = useMemo(
+    () => [...new Set(sortedProducts.map((product) => product.category).filter(Boolean))],
+    [sortedProducts]
+  );
+
+  const filteredCostProducts = useMemo(() => {
+    const search = normalizeMatch(costProductSearch);
+    return sortedProducts.filter((product) => {
+      const matchesCategory = !costCategoryFilter || product.category === costCategoryFilter;
+      const matchesSearch = !search || normalizeMatch(
+        `${product.name} ${product.category} ${product.motorcycle_model || ''}`
+      ).includes(search);
+      return matchesCategory && matchesSearch;
+    });
+  }, [costCategoryFilter, costProductSearch, sortedProducts]);
 
   const offerProductOptions = useMemo(() => {
     const search = normalizeMatch(offerProductSearch);
@@ -1063,15 +1081,61 @@ export default function CustomPanel() {
           </div>
 
           <div className={panelClass}>
-            <div className="flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-primary" />
-              <div>
-                <h2 className="text-xl font-black text-white">Costo por producto</h2>
-                <p className="mt-1 text-sm text-white/40">El margen se calcula sobre el precio actual de venta.</p>
+            <div className="flex flex-col gap-5 border-b border-white/[0.07] pb-5">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="text-xl font-black text-white">Costo por producto</h2>
+                  <p className="mt-1 text-sm text-white/40">El margen se calcula sobre el precio actual de venta.</p>
+                </div>
               </div>
+
+              <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_minmax(220px,320px)_auto]">
+                <label className="relative block">
+                  <span className="sr-only">Buscar producto</span>
+                  <input
+                    type="search"
+                    value={costProductSearch}
+                    onChange={(event) => setCostProductSearch(event.target.value)}
+                    placeholder="Buscar por producto o modelo"
+                    className={`${fieldClass} mt-0 pr-11`}
+                  />
+                  <Search className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/35" />
+                </label>
+
+                <label>
+                  <span className="sr-only">Filtrar por categoría</span>
+                  <select
+                    value={costCategoryFilter}
+                    onChange={(event) => setCostCategoryFilter(event.target.value)}
+                    className={`${fieldClass} mt-0 cursor-pointer`}
+                  >
+                    <option value="">Todas las categorías</option>
+                    {costCategoryOptions.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCostProductSearch('');
+                    setCostCategoryFilter('');
+                  }}
+                  disabled={!costProductSearch && !costCategoryFilter}
+                  className="min-h-11 rounded-lg border border-white/10 px-4 text-sm font-bold text-white/55 transition hover:border-secondary/40 hover:text-white disabled:cursor-default disabled:opacity-30"
+                >
+                  Limpiar
+                </button>
+              </div>
+
+              <p className="text-xs font-bold text-white/35">
+                {filteredCostProducts.length} de {sortedProducts.length} productos
+              </p>
             </div>
             <div className="mt-5 divide-y divide-white/[0.07]">
-              {sortedProducts.map((product) => {
+              {filteredCostProducts.map((product) => {
                 const cost = product.cost_price == null ? null : Number(product.cost_price);
                 const margin = cost == null ? null : Number(product.price || 0) - cost;
                 const marginPercent = margin != null && product.price > 0 ? (margin / product.price) * 100 : null;
@@ -1115,6 +1179,12 @@ export default function CustomPanel() {
                   </form>
                 );
               })}
+              {filteredCostProducts.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-white/10 px-5 py-10 text-center">
+                  <p className="font-black text-white">No encontramos productos</p>
+                  <p className="mt-1 text-sm text-white/40">Probá con otra búsqueda o categoría.</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
