@@ -1069,19 +1069,34 @@ export default function CustomPanel() {
             <b className="text-white">Uso opcional.</b> Podés dejar cualquier costo vacío. Esto no afecta el catálogo, el stock ni las compras.
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              ['Ventas analizadas', formatARS(Math.round(profitability.revenue)), 'Pedidos entregados'],
-              ['Costo estimado', formatARS(Math.round(profitability.cost)), 'Según costos cargados'],
-              ['Ganancia bruta', formatARS(Math.round(profitability.profit)), 'Venta menos costo'],
-              ['Sin costo', String(profitability.itemsWithoutCost), 'Productos vendidos sin costo cargado'],
-            ].map(([label, value, hint]) => (
-              <div key={label} className={panelClass}>
-                <p className="text-[11px] font-black uppercase tracking-wider text-white/40">{label}</p>
-                <p className="mt-2 break-words text-2xl font-black text-primary">{value}</p>
-                <p className="mt-1 text-xs text-white/35">{hint}</p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[0.8fr_1.4fr_0.8fr]">
+            <div className={panelClass}>
+              <p className="text-[11px] font-black uppercase tracking-wider text-white/40">Ventas analizadas</p>
+              <p className="mt-2 break-words text-2xl font-black text-primary">{formatARS(Math.round(profitability.revenue))}</p>
+              <p className="mt-1 text-xs text-white/35">Pedidos entregados</p>
+            </div>
+
+            <div className={`${panelClass} sm:col-span-2 xl:col-span-1`}>
+              <p className="text-[11px] font-black uppercase tracking-wider text-white/40">Costos y ganancias</p>
+              <div className="mt-3 grid grid-cols-2 divide-x divide-white/[0.08]">
+                <div className="min-w-0 pr-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-red-300/80">Costo estimado</p>
+                  <p className="mt-1 break-words text-xl font-black text-red-400 sm:text-2xl">{formatARS(Math.round(profitability.cost))}</p>
+                  <p className="mt-1 text-xs text-white/35">Según costos cargados</p>
+                </div>
+                <div className="min-w-0 pl-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-300/80">Ganancia bruta</p>
+                  <p className="mt-1 break-words text-xl font-black text-emerald-400 sm:text-2xl">{formatARS(Math.round(profitability.profit))}</p>
+                  <p className="mt-1 text-xs text-white/35">Venta menos costo</p>
+                </div>
               </div>
-            ))}
+            </div>
+
+            <div className={panelClass}>
+              <p className="text-[11px] font-black uppercase tracking-wider text-white/40">Sin costo</p>
+              <p className="mt-2 break-words text-2xl font-black text-primary">{profitability.itemsWithoutCost}</p>
+              <p className="mt-1 text-xs text-white/35">Productos vendidos sin costo cargado</p>
+            </div>
           </div>
 
           <div className={panelClass}>
