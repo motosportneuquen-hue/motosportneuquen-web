@@ -43,9 +43,12 @@ type StoredOrder = {
 
 async function supabaseRequest(env: Env, path: string, init: RequestInit = {}) {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Falta configurar la clave privada de Supabase en Cloudflare.');
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY.trim();
   const headers = new Headers(init.headers);
-  headers.set('apikey', env.SUPABASE_SERVICE_ROLE_KEY);
-  headers.set('Authorization', `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`);
+  headers.set('apikey', supabaseKey);
+  if (!supabaseKey.startsWith('sb_secret_')) {
+    headers.set('Authorization', `Bearer ${supabaseKey}`);
+  }
   if (init.body) headers.set('Content-Type', 'application/json');
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...init, headers });
 }
@@ -72,7 +75,7 @@ async function updateOrderPayment(env: Env, orderId: string, changes: Record<str
 async function mercadoPagoRequest(env: Env, path: string, init: RequestInit = {}) {
   if (!env.MERCADO_PAGO_ACCESS_TOKEN) throw new Error('Falta configurar Mercado Pago en Cloudflare.');
   const headers = new Headers(init.headers);
-  headers.set('Authorization', `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}`);
+  headers.set('Authorization', `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN.trim()}`);
   if (init.body) headers.set('Content-Type', 'application/json');
   return fetch(`https://api.mercadopago.com${path}`, { ...init, headers });
 }
