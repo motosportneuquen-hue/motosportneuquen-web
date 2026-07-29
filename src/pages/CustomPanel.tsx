@@ -315,16 +315,21 @@ export default function CustomPanel() {
 
   const isAdmin = Boolean(profile?.is_admin);
 
+  const visibleOrders = useMemo(
+    () => orders.filter((order) => order.payment_method === 'transferencia' || order.status !== 'pending'),
+    [orders]
+  );
+
   const stats = useMemo(() => {
-    return calculateOrderMetrics(orders, products.map((product) => Number(product.stock || 0)));
-  }, [orders, products]);
+    return calculateOrderMetrics(visibleOrders, products.map((product) => Number(product.stock || 0)));
+  }, [products, visibleOrders]);
 
   const profitability = useMemo(() => calculateProfitability(orders), [orders]);
 
   const customers = useMemo(() => {
     const grouped = new Map<string, AdminCustomer>();
 
-    orders.forEach((order) => {
+    visibleOrders.forEach((order) => {
       const email = (order.customer_email || '').trim().toLowerCase();
       const phone = (order.customer_phone || '').trim();
       const phoneKey = phone.replace(/\D/g, '');
@@ -352,7 +357,7 @@ export default function CustomPanel() {
     return [...grouped.values()]
       .filter((customer) => customer.orderCount > 0)
       .sort((a, b) => new Date(b.lastOrderAt).getTime() - new Date(a.lastOrderAt).getTime());
-  }, [orders]);
+  }, [visibleOrders]);
 
   const filteredCustomers = useMemo(() => {
     const search = normalizeMatch(customerSearch);
@@ -1023,7 +1028,7 @@ export default function CustomPanel() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Productos</p><p className="mt-2 text-3xl font-black text-white">{products.length}</p></div>
-        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Pedidos activos</p><p className="mt-2 text-3xl font-black text-primary">{orders.filter((order) => !['delivered', 'cancelled'].includes(order.status)).length}</p></div>
+        <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Pedidos activos</p><p className="mt-2 text-3xl font-black text-primary">{visibleOrders.filter((order) => !['delivered', 'cancelled'].includes(order.status)).length}</p></div>
         <div className={panelClass}><p className="text-xs font-bold uppercase tracking-wider text-white/40">Unidades en stock</p><p className="mt-2 text-3xl font-black text-primary">{stats.totalStock}</p></div>
       </div>
 
@@ -1569,18 +1574,18 @@ export default function CustomPanel() {
               <h2 className="text-2xl font-black text-white">Pedidos</h2>
               <p className="mt-1 text-sm text-white/45">Gestioná la preparación, el envío y la entrega desde acá.</p>
             </div>
-            <span className="text-sm font-bold text-white/50">{orders.length} pedidos registrados</span>
+            <span className="text-sm font-bold text-white/50">{visibleOrders.length} pedidos visibles</span>
           </div>
 
-          {orders.length === 0 ? (
+          {visibleOrders.length === 0 ? (
             <div className={`${panelClass} py-12 text-center`}>
               <PackageCheck className="mx-auto h-10 w-10 text-primary" />
               <p className="mt-4 font-bold text-white">Todavía no hay pedidos.</p>
-              <p className="mt-1 text-sm text-white/45">Cuando alguien compre desde la bolsa aparecerá automáticamente.</p>
+              <p className="mt-1 text-sm text-white/45">Las transferencias aparecen al realizarse. Los demás medios aparecen cuando el pago queda confirmado.</p>
             </div>
           ) : null}
 
-          {orders.map((order) => (
+          {visibleOrders.map((order) => (
             <form
               key={order.id}
               className={panelClass}
