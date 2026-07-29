@@ -1045,7 +1045,7 @@ export default function CustomPanel() {
             key={id}
             onClick={() => setActiveTab(id as typeof activeTab)}
             className={`min-h-10 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-black transition ${
-              id === 'coupons'
+              ['coupons', 'offers'].includes(id)
                 ? activeTab === id
                   ? 'border-red-500 bg-red-500 text-white shadow-[0_0_18px_rgba(239,68,68,0.28)]'
                   : 'border-red-500/35 bg-red-500/10 text-red-300 hover:border-red-500/70 hover:bg-red-500/15 hover:text-white'
