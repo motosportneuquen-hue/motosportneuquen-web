@@ -855,7 +855,7 @@ export default function CustomPanel() {
     await loadData();
   };
 
-  const updateMotorcycleModel = async (modelId: string, changes: Partial<Pick<AdminMotorcycleModel, 'name' | 'brand_id' | 'activo' | 'orden'>>) => {
+  const updateMotorcycleModel = async (modelId: string, changes: Partial<Pick<AdminMotorcycleModel, 'name' | 'brand_id' | 'activo'>>) => {
     setSaving(true);
     const { error } = await supabase.from('motorcycle_models').update(changes).eq('id', modelId);
     setMessage(error ? `No se pudo actualizar el modelo: ${error.message}` : 'Modelo actualizado correctamente.');
@@ -885,7 +885,7 @@ export default function CustomPanel() {
 
   const updateMotorcycleBrand = async (
     brandId: string,
-    changes: Partial<Pick<AdminMotorcycleBrand, 'name' | 'activo' | 'orden'>>
+    changes: Partial<Pick<AdminMotorcycleBrand, 'name' | 'activo'>>
   ) => {
     setSaving(true);
     const { error } = await supabase.from('motorcycle_brands').update(changes).eq('id', brandId);
@@ -1851,7 +1851,7 @@ export default function CustomPanel() {
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-secondary">Marcas</p>
                 <h2 className="mt-1 text-xl font-black text-white">Nueva marca</h2>
-                <p className="mt-1 text-sm text-white/45">Se utilizará para ordenar los modelos en el selector de la tienda.</p>
+                <p className="mt-1 text-sm text-white/45">Se utilizará para organizar los modelos en el selector de la tienda.</p>
               </div>
               <label className={labelClass}>
                 Nombre de la marca
@@ -1891,7 +1891,7 @@ export default function CustomPanel() {
             <div className={`${panelClass} space-y-3`}>
               <div>
                 <h2 className="text-xl font-black text-white">Marcas disponibles</h2>
-                <p className="mt-1 text-sm text-white/45">Editá el nombre, el orden o la visibilidad.</p>
+                <p className="mt-1 text-sm text-white/45">Editá el nombre o la visibilidad. El orden es automático.</p>
               </div>
               {motorcycleBrands.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-secondary/20 bg-secondary/[0.04] p-4 text-sm text-white/50">
@@ -1899,7 +1899,7 @@ export default function CustomPanel() {
                 </p>
               ) : null}
               {motorcycleBrands.map((brand) => (
-                <div key={brand.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 sm:grid-cols-[1fr_80px_auto_auto] sm:items-end">
+                <div key={brand.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
                   <label className={labelClass}>
                     Marca
                     <input
@@ -1908,19 +1908,6 @@ export default function CustomPanel() {
                       onBlur={(event) => {
                         const name = event.target.value.trim();
                         if (name && name !== brand.name) updateMotorcycleBrand(brand.id, { name });
-                      }}
-                    />
-                  </label>
-                  <label className={labelClass}>
-                    Orden
-                    <input
-                      type="number"
-                      min="0"
-                      defaultValue={brand.orden}
-                      className={fieldClass}
-                      onBlur={(event) => {
-                        const orden = Number(event.target.value);
-                        if (orden !== brand.orden) updateMotorcycleBrand(brand.id, { orden });
                       }}
                     />
                   </label>
@@ -1937,13 +1924,13 @@ export default function CustomPanel() {
             <div className={`${panelClass} space-y-3`}>
               <div>
                 <h2 className="text-xl font-black text-white">Modelos disponibles</h2>
-                <p className="mt-1 text-sm text-white/45">Renombrá, asigná una marca, ordená, ocultá o eliminá cada modelo.</p>
+                <p className="mt-1 text-sm text-white/45">Renombrá, asigná una marca, ocultá o eliminá. El orden es automático.</p>
               </div>
               {motorcycleModels.length === 0 ? (
                 <p className="rounded-lg border border-white/[0.08] bg-black/20 p-4 text-sm text-white/50">No hay modelos cargados.</p>
               ) : null}
               {motorcycleModels.map((model) => (
-                <div key={model.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 md:grid-cols-[1fr_170px_76px_auto_auto] md:items-end">
+                <div key={model.id} className="grid gap-3 rounded-lg border border-white/[0.08] bg-black/25 p-4 md:grid-cols-[1fr_170px_auto_auto] md:items-end">
                   <label className={labelClass}>
                     Modelo
                     <input
@@ -1961,19 +1948,6 @@ export default function CustomPanel() {
                       <option value="">Sin marca</option>
                       {motorcycleBrands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
                     </select>
-                  </label>
-                  <label className={labelClass}>
-                    Orden
-                    <input
-                      type="number"
-                      min="0"
-                      defaultValue={model.orden}
-                      className={fieldClass}
-                      onBlur={(event) => {
-                        const orden = Number(event.target.value);
-                        if (orden !== model.orden) updateMotorcycleModel(model.id, { orden });
-                      }}
-                    />
                   </label>
                   <button type="button" onClick={() => updateMotorcycleModel(model.id, { activo: !model.activo })} className={`min-h-11 rounded-lg border px-3 text-sm font-bold ${model.activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-white/10 text-white/45'}`}>
                     {model.activo ? 'Visible' : 'Oculto'}
@@ -1997,13 +1971,10 @@ export default function CustomPanel() {
             <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-gray-300">
               Usa la imagen general de MotoSport Neuquén y el orden se asigna automaticamente al crear.
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <label className={labelClass}>Orden actual<input type="number" className={fieldClass} value={categoryForm.orden} onChange={(e) => setCategoryForm({ ...categoryForm, orden: e.target.value })} disabled={!categoryForm.id} /></label>
-              <label className={`${labelClass} flex items-center gap-3 pt-7`}>
-                <input type="checkbox" checked={categoryForm.activo} onChange={(e) => setCategoryForm({ ...categoryForm, activo: e.target.checked })} />
-                <span>Categoria activa</span>
-              </label>
-            </div>
+            <label className={`${labelClass} flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3`}>
+              <input type="checkbox" checked={categoryForm.activo} onChange={(e) => setCategoryForm({ ...categoryForm, activo: e.target.checked })} />
+              <span>Categoria activa</span>
+            </label>
             <div className="flex gap-2">
               <button disabled={saving} className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 font-bold text-black disabled:opacity-60">
                 <Save className="h-4 w-4" />
@@ -2015,11 +1986,10 @@ export default function CustomPanel() {
 
           <div className={`${panelClass} overflow-x-auto`}>
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="text-white"><tr><th className="p-2">Nombre</th><th className="p-2">Orden</th><th className="p-2">Estado</th><th className="p-2">Descripcion</th><th className="p-2">Acciones</th></tr></thead>
+              <thead className="text-white"><tr><th className="p-2">Nombre</th><th className="p-2">Estado</th><th className="p-2">Descripcion</th><th className="p-2">Acciones</th></tr></thead>
               <tbody>{sortedCategories.map((category) => (
                 <tr key={category.id} className="border-t border-white/10 text-gray-200">
                   <td className="p-2 font-semibold text-white">{category.name}</td>
-                  <td className="p-2">{category.orden ?? 0}</td>
                   <td className="p-2">{category.activo ? 'Activa' : 'Oculta'}</td>
                   <td className="p-2">{category.description || 'Sin descripcion'}</td>
                   <td className="flex gap-2 p-2">
@@ -2042,13 +2012,10 @@ export default function CustomPanel() {
             <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-gray-300">
               Usa la imagen general de MotoSport Neuquén y el orden se asigna automaticamente al crear.
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <label className={labelClass}>Orden actual<input type="number" className={fieldClass} value={testimonialForm.orden} onChange={(e) => setTestimonialForm({ ...testimonialForm, orden: e.target.value })} disabled={!testimonialForm.id} /></label>
-              <label className={`${labelClass} flex items-center gap-3 pt-7`}>
-                <input type="checkbox" checked={testimonialForm.activo} onChange={(e) => setTestimonialForm({ ...testimonialForm, activo: e.target.checked })} />
-                <span>Mostrar reseña</span>
-              </label>
-            </div>
+            <label className={`${labelClass} flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3`}>
+              <input type="checkbox" checked={testimonialForm.activo} onChange={(e) => setTestimonialForm({ ...testimonialForm, activo: e.target.checked })} />
+              <span>Mostrar reseña</span>
+            </label>
             <div className="flex gap-2">
               <button disabled={saving} className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 font-bold text-black disabled:opacity-60">
                 <Save className="h-4 w-4" />
@@ -2070,7 +2037,7 @@ export default function CustomPanel() {
                   <div className="min-w-0">
                     <p className="text-xl font-bold text-white">{testimonial.nombre}</p>
                     <p className="mt-2 text-sm text-gray-300">{testimonial.mensaje}</p>
-                    <p className="mt-2 text-xs text-gray-500">Orden: {testimonial.orden} | {testimonial.activo ? 'Visible' : 'Oculta'}</p>
+                    <p className="mt-2 text-xs text-gray-500">{testimonial.activo ? 'Visible' : 'Oculta'} · orden automático</p>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => editTestimonial(testimonial)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button>
