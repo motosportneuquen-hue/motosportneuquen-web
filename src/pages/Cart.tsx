@@ -59,7 +59,7 @@ export default function Cart() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transferencia');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mercado_pago');
   const [submitting, setSubmitting] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState('');
   const [couponCode, setCouponCode] = useState('');
