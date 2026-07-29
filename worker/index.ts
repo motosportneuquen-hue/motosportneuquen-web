@@ -135,7 +135,7 @@ async function createMercadoPagoPreference(request: Request, env: Env) {
       throw new Error(payload.message || `Mercado Pago rechazó la operación (${response.status}).`);
     }
     await updateOrderPayment(env, order.id, { mp_preference_id: payload.id, mp_status: 'preference_created' });
-    const checkoutUrl = payload.sandbox_init_point || payload.init_point;
+    const checkoutUrl = payload.init_point || payload.sandbox_init_point;
     if (!checkoutUrl) throw new Error('Mercado Pago no devolvió el enlace de pago.');
     return json({ checkoutUrl });
   } catch (error) {
