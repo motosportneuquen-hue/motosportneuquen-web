@@ -15,6 +15,7 @@ import { useAuthStore } from './store/authStore';
 import ShippingPolicy from './pages/ShippingPolicy';
 import Returns from './pages/Returns';
 import OrderTracking from './pages/OrderTracking';
+import PaymentResult from './pages/PaymentResult';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
@@ -82,6 +83,7 @@ function App() {
           <Route path="/shipping" element={<ShippingPolicy />} />
           <Route path="/returns" element={<Returns />} />
           <Route path="/orders" element={<OrderTracking />} />
+          <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/about" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />

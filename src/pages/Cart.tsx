@@ -232,6 +232,30 @@ export default function Cart() {
 
       const orderId = String(data);
 
+      if (['mercado_pago', 'tarjeta_credito', 'tarjeta_debito'].includes(paymentMethod)) {
+        try {
+          const response = await fetch('/api/payments/mercadopago/preference', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          });
+          const payload = (await response.json()) as { checkoutUrl?: string; error?: string };
+          if (!response.ok || !payload.checkoutUrl) {
+            throw new Error(payload.error || 'No se pudo abrir Mercado Pago.');
+          }
+          window.location.assign(payload.checkoutUrl);
+          return;
+        } catch (error) {
+          setCheckoutMessage(
+            error instanceof Error
+              ? `${error.message} Tu pedido quedó pendiente y no se realizó ningún cobro.`
+              : 'No se pudo abrir Mercado Pago. No se realizó ningún cobro.'
+          );
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const lines = cartItems.map((item, index) => {
         const colorText = item.color ? ` | Color: ${item.color}` : '';
         return `${index + 1}. ${item.name}${colorText} | Cantidad: ${item.quantity} | Unit: ${formatItemPrice(item.price)} | Subtotal: ${formatItemPrice(item.price * item.quantity)}`;
@@ -536,7 +560,9 @@ export default function Cart() {
                   );
                 })}
               </div>
-              <p className="mt-2 text-xs text-gray-400">El pago se coordina por WhatsApp. La web no solicita ni almacena datos de la tarjeta.</p>
+              <p className="mt-2 text-xs text-gray-400">
+                Mercado Pago procesa de forma segura los pagos con tarjeta. La tienda no solicita ni almacena los datos de tu tarjeta.
+              </p>
             </fieldset>
 
             <button
@@ -545,7 +571,11 @@ export default function Cart() {
               className="w-full flex items-center justify-center bg-white text-black px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors btn-hover-scale disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
-              {submitting ? 'Procesando compra...' : 'Comprar por WhatsApp'}
+              {submitting
+                ? 'Procesando compra...'
+                : ['mercado_pago', 'tarjeta_credito', 'tarjeta_debito'].includes(paymentMethod)
+                  ? 'Continuar a Mercado Pago'
+                  : 'Comprar por WhatsApp'}
             </button>
 
             <button
