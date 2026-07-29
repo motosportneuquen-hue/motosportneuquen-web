@@ -1026,7 +1026,15 @@ export default function CustomPanel() {
           <button
             key={id}
             onClick={() => setActiveTab(id as typeof activeTab)}
-            className={`min-h-10 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-bold transition ${activeTab === id ? 'bg-primary text-black' : 'text-white/55 hover:bg-white/[0.05] hover:text-white'}`}
+            className={`min-h-10 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-black transition ${
+              ['metrics', 'orders', 'products'].includes(id)
+                ? activeTab === id
+                  ? 'border-secondary bg-secondary text-white shadow-[0_0_18px_rgba(192,38,211,0.28)]'
+                  : 'border-secondary/35 bg-secondary/10 text-fuchsia-300 hover:border-secondary/70 hover:bg-secondary/15 hover:text-white'
+                : activeTab === id
+                  ? 'border-primary bg-primary text-black'
+                  : 'border-transparent text-white/55 hover:bg-white/[0.05] hover:text-white'
+            }`}
           >
             {label}
           </button>
