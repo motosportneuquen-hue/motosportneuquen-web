@@ -2,6 +2,9 @@
   "name": "motosportneuquen-web",
   "compatibility_date": "2026-07-07",
   "main": "worker/index.ts",
+  "vars": {
+    "SHIPPING_ORIGIN_POSTAL_CODE": "8300"
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist",

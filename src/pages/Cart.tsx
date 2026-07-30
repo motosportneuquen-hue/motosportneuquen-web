@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Truck, Banknote, CreditCard, Landmark, WalletCards, TicketPercent } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Banknote, CreditCard, Landmark, WalletCards, TicketPercent } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
@@ -345,14 +345,18 @@ export default function Cart() {
                     {item.color ? <p className="text-sm text-gray-200">Color: {item.color}</p> : null}
                     <div className="flex items-center mt-2">
                       <button
+                        type="button"
                         onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                        aria-label={`Restar una unidad de ${item.name}`}
                         className="flex h-9 w-9 items-center justify-center rounded-l-md bg-gray-800 hover:bg-gray-700"
                       >
                         <Minus className="h-4 w-4 text-gray-300" />
                       </button>
                       <span className="flex h-9 min-w-9 items-center justify-center bg-gray-800 px-2 text-gray-200">{item.quantity}</span>
                       <button
+                        type="button"
                         onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                        aria-label={`Agregar una unidad de ${item.name}`}
                         className="flex h-9 w-9 items-center justify-center rounded-r-md bg-gray-800 hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={item.quantity >= item.stock}
                       >
@@ -363,7 +367,7 @@ export default function Cart() {
                 </div>
                 <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-end">
                   <p className="font-semibold text-white mb-2">{formatItemPrice(item.price * item.quantity)}</p>
-                  <button onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} de la bolsa`} className="flex h-11 w-11 items-center justify-center text-purple-400 transition-colors hover:text-gray-300">
+                  <button type="button" onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} de la bolsa`} className="flex h-11 w-11 items-center justify-center text-purple-400 transition-colors hover:text-gray-300">
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>

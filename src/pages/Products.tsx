@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Filter, SlidersHorizontal, X } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import QuickView from '../components/QuickView';
 import { formatARS } from '../lib/currency';
@@ -64,6 +64,7 @@ export default function ProductsPage() {
 
   const addItem = useCartStore((state) => state.addItem);
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchQuery = searchParams.get('search') || '';
   const categoryParam = searchParams.get('category') || '';
@@ -155,6 +156,7 @@ export default function ProductsPage() {
     setSelectedModel('');
     setPriceRange([0, maxPrice]);
     setSortBy('');
+    if (location.search) navigate('/products', { replace: true });
   };
 
   const activeFilterCount = [selectedCategory, selectedModel, priceRange[1] < maxPrice ? 'price' : ''].filter(Boolean).length;

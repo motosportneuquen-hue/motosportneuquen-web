@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 
 const questions = [
-  { question: '¿Como hago un pedido?', answer: 'Agrega los productos a la bolsa y selecciona Comprar por WhatsApp. Recibiremos el detalle para coordinar la compra.' },
-  { question: '¿Que significa “Precio a confirmar”?', answer: 'El valor se consulta antes de cerrar el pedido. No se cobra ni se confirma un total de $0.' },
-  { question: '¿Como confirmo que el repuesto sirve para mi moto?', answer: 'Envianos por WhatsApp marca, modelo, cilindrada y año. Si hace falta, tambien podes adjuntar una foto del repuesto.' },
-  { question: '¿Qué formas de pago ofrecen?', answer: 'Aceptamos Mercado Pago y todas las tarjetas. La modalidad se confirma al coordinar la compra.' },
+  { question: '¿Cómo hago un pedido?', answer: 'Agregá los productos a la bolsa, completá tus datos, elegí la entrega y seleccioná el medio de pago. Si pagás online, te llevamos de forma segura a Mercado Pago.' },
+  { question: '¿Qué significa “Precio a confirmar”?', answer: 'El valor se consulta antes de cerrar el pedido. No se cobra ni se confirma un total de $0.' },
+  { question: '¿Cómo confirmo que el repuesto sirve para mi moto?', answer: 'Elegí la marca y el modelo en el buscador de compatibilidad o envianos por WhatsApp los datos de tu moto.' },
+  { question: '¿Qué formas de pago ofrecen?', answer: 'Aceptamos efectivo, transferencia, Mercado Pago y tarjetas de crédito o débito procesadas de forma segura por Mercado Pago.' },
   { question: '¿Dónde están y en qué horarios atienden?', answer: 'Estamos en Cacique Catriel 154, Neuquén. Atendemos de lunes a viernes de 9 a 21 hs y los sábados de 9 a 20 hs.' },
-  { question: '¿Realizan envios?', answer: 'Si, realizamos envios a todo el pais. El medio, costo y plazo se confirman para cada pedido.' },
-  { question: '¿El stock del catalogo esta actualizado?', answer: 'El sistema controla el stock al registrar la compra. De todos modos, la confirmacion final se realiza por WhatsApp.' },
-  { question: '¿Como consulto un pedido?', answer: 'Usa la pagina Consulta tu pedido o escribinos directamente por WhatsApp con el numero recibido.' },
-  { question: '¿Que hago si tengo un inconveniente?', answer: 'Contactanos por WhatsApp con el numero de pedido, una descripcion y fotos si corresponde. Revisaremos el caso personalmente.' },
+  { question: '¿Realizan envíos?', answer: 'Sí, realizamos envíos a todo el país. Podés calcular las opciones disponibles ingresando tu código postal en la bolsa.' },
+  { question: '¿El stock del catálogo está actualizado?', answer: 'Sí. En pagos online el stock se descuenta cuando Mercado Pago confirma el cobro; en transferencia o efectivo se reserva al registrar el pedido.' },
+  { question: '¿Cómo consulto un pedido?', answer: 'Usá la página “Mi pedido” con el código recibido y el mismo celular informado durante la compra.' },
+  { question: '¿Qué hago si tengo un inconveniente?', answer: 'Contactanos por WhatsApp con el número de pedido, una descripción y fotos si corresponde. Revisaremos el caso personalmente.' },
   { question: '¿Los productos eléctricos tienen cambio?', answer: 'No. Los productos eléctricos no tienen cambio. Recomendamos confirmar compatibilidad y condiciones antes de comprarlos.' },
 ];
 

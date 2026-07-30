@@ -320,6 +320,7 @@ export default function CustomPanel() {
   const [testimonialForm, setTestimonialForm] = useState<TestimonialForm>(emptyTestimonial);
   const [debtorForm, setDebtorForm] = useState<DebtorForm>(emptyDebtor);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [costProductSearch, setCostProductSearch] = useState('');
@@ -457,8 +458,10 @@ export default function CustomPanel() {
 
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
+    setRefreshing(true);
+    try {
 
-    const [{ data: productData }, { data: categoryData }, { data: testimonialsData }, { data: imagesData }, { data: debtorsData }, { data: ordersData }, { data: modelsData }, { data: brandsData }, { data: offersData }, { data: couponsData }] = await Promise.all([
+    const [{ data: productData, error: productError }, { data: categoryData, error: categoryError }, { data: testimonialsData, error: testimonialError }, { data: imagesData, error: imagesError }, { data: debtorsData, error: debtorsError }, { data: ordersData, error: ordersError }, { data: modelsData, error: modelsError }, { data: brandsData, error: brandsError }, { data: offersData, error: offersError }, { data: couponsData, error: couponsError }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
@@ -470,6 +473,13 @@ export default function CustomPanel() {
       supabase.from('offers').select('*, products(*)').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('coupons').select('*').order('created_at', { ascending: false }),
     ]);
+
+    const loadError = productError || categoryError || testimonialError || imagesError || debtorsError
+      || ordersError || modelsError || brandsError || offersError || couponsError;
+    if (loadError) {
+      setMessage(`No se pudo actualizar todo el panel: ${loadError.message}`);
+      return;
+    }
 
     setProducts((productData || []) as Product[]);
     setCategories((categoryData || []) as AdminCategory[]);
@@ -486,6 +496,11 @@ export default function CustomPanel() {
       return acc;
     }, {});
     setProductImages(groupedImages);
+    } catch (error) {
+      setMessage(`No se pudo actualizar el panel: ${error instanceof Error ? error.message : 'error desconocido'}`);
+    } finally {
+      setRefreshing(false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -1086,9 +1101,14 @@ export default function CustomPanel() {
           <h1 className="mt-2 text-3xl font-black text-white md:text-4xl">Administración</h1>
           <p className="mt-2 text-sm text-white/45">Pedidos, productos y categorías en un solo lugar.</p>
         </div>
-        <button onClick={loadData} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white transition hover:border-primary/40">
-          <RefreshCw className="h-4 w-4" />
-          Actualizar
+        <button
+          type="button"
+          onClick={loadData}
+          disabled={refreshing}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white transition hover:border-primary/40 disabled:cursor-wait disabled:opacity-60"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Actualizando...' : 'Actualizar'}
         </button>
       </div>
 

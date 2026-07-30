@@ -114,7 +114,9 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto transform-gpu animate-modal-enter">
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Cerrar vista rápida"
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200"
         >
           <X className="w-6 h-6" />
@@ -229,14 +231,18 @@ const QuickView = memo(function QuickView({ product, onClose }: QuickViewProps) 
               </label>
               <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
                 <button
+                  type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  aria-label="Restar una unidad"
                   className="px-3 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
                 <span className="px-4 py-1 text-gray-800 dark:text-gray-200">{quantity}</span>
                 <button
+                  type="button"
                   onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  aria-label="Agregar una unidad"
                   className="px-3 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <Plus className="h-4 w-4" />

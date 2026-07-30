@@ -216,14 +216,18 @@ export default function ProductDetail() {
             </label>
             <div className="flex items-center border border-white/40 rounded-md">
               <button
+                type="button"
                 onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
+                aria-label="Restar una unidad"
                 className="px-3 py-1 text-gray-200 hover:bg-white/15"
               >
                 -
               </button>
               <span className="px-4 py-1 text-white">{quantity}</span>
               <button
+                type="button"
                 onClick={() => handleQuantityChange(Math.min(product.stock, quantity + 1))}
+                aria-label="Agregar una unidad"
                 className="px-3 py-1 text-gray-200 hover:bg-white/15"
               >
                 +
