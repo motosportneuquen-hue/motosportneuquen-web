@@ -1,7 +1,7 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { BarChart3, Calculator, CheckCircle, Download, Edit, Mail, MapPin, PackageCheck, Phone, RefreshCw, Save, Search, TicketPercent, Trash2, Truck, Users } from 'lucide-react';
+import { BarChart3, Calculator, CheckCircle, Download, Edit, Mail, MapPin, MessageCircle, PackageCheck, Phone, RefreshCw, Save, Search, TicketPercent, Trash2, Truck, Users } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
@@ -846,6 +846,50 @@ export default function CustomPanel() {
       }
       await loadData();
     }
+  };
+
+  const sendTrackingByWhatsApp = (order: AdminOrder, form: HTMLFormElement | null) => {
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const trackingNumber = String(formData.get('tracking_number') || '').trim();
+    const shippingProvider = String(formData.get('shipping_provider') || '').trim();
+    const shippingService = String(formData.get('shipping_service') || '').trim();
+    const adminNotes = String(formData.get('admin_notes') || '').trim();
+
+    if (!trackingNumber) {
+      setMessage('Ingresá el código de seguimiento antes de enviarlo.');
+      return;
+    }
+
+    let phone = String(order.customer_phone || '').replace(/\D/g, '');
+    if (phone.startsWith('0')) phone = phone.slice(1);
+    if (phone.startsWith('54') && !phone.startsWith('549')) phone = `549${phone.slice(2)}`;
+    if (!phone.startsWith('54')) phone = `549${phone}`;
+    if (phone.length < 12) {
+      setMessage('El pedido no tiene un celular válido para enviar el seguimiento.');
+      return;
+    }
+
+    const orderNumber = order.id.slice(0, 8).toUpperCase();
+    const message = [
+      `Hola ${order.customer_name || ''}, tu pedido #${orderNumber} ya tiene código de seguimiento.`,
+      '',
+      shippingProvider ? `Transportista: ${shippingProvider}` : '',
+      shippingService ? `Servicio: ${shippingService}` : '',
+      `Código de seguimiento: ${trackingNumber}`,
+      '',
+      'Por este WhatsApp vas a recibir las actualizaciones de tu pedido.',
+      'MotoSport Neuquén',
+    ].filter((line) => line !== '').join('\n');
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+    void updateOrder(order.id, {
+      shipping_provider: shippingProvider || null,
+      shipping_service: shippingService || null,
+      tracking_number: trackingNumber,
+      admin_notes: adminNotes || null,
+    });
   };
 
   const updateProductCost = async (productId: string, value: string) => {
@@ -1788,7 +1832,15 @@ export default function CustomPanel() {
                   <label className={labelClass}>Código de seguimiento<input name="tracking_number" defaultValue={order.tracking_number || ''} className={fieldClass} placeholder="Ingresá el código" /></label>
                   <label className={labelClass}>Nota interna<input name="admin_notes" defaultValue={order.admin_notes || ''} className={fieldClass} placeholder="Solo visible para el local" /></label>
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={saving || !order.customer_phone}
+                    onClick={(event) => sendTrackingByWhatsApp(order, event.currentTarget.form)}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-emerald-400/35 bg-emerald-400/10 px-5 py-2 font-black text-emerald-300 transition hover:bg-emerald-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+                  >
+                    <MessageCircle className="h-4 w-4" /> Enviar seguimiento por WhatsApp
+                  </button>
                   <button disabled={saving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 font-black text-black transition hover:brightness-110 disabled:opacity-50 sm:w-auto">
                     <Save className="h-4 w-4" /> Guardar envío
                   </button>
