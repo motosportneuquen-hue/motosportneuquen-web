@@ -133,6 +133,21 @@ export default function Cart() {
     setShippingQuotes([]);
     setSelectedShipping(null);
 
+    if (cartItems.length > 0 && cartItems.every((item) => item.free_shipping)) {
+      const freeQuote: ShippingQuote = {
+        id: 'free-shipping',
+        provider: 'MotoSport Neuquén',
+        service: 'Envío gratis',
+        deliveryType: 'A coordinar',
+        price: 0,
+      };
+      setShippingQuotes([freeQuote]);
+      setSelectedShipping(freeQuote);
+      setShippingMessage('Este pedido tiene envío gratis.');
+      setQuotingShipping(false);
+      return;
+    }
+
     const missingDimensions = cartItems.some(
       (item) => !item.weight_grams || !item.length_cm || !item.width_cm || !item.height_cm
     );

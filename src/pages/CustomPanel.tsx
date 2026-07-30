@@ -21,6 +21,7 @@ type ProductForm = {
   colors: string;
   extra_images: string;
   is_best_seller: boolean;
+  free_shipping: boolean;
   weight_grams: string;
   length_cm: string;
   width_cm: string;
@@ -172,6 +173,7 @@ const emptyProduct: ProductForm = {
   colors: 'Negro, Blanco, Gris',
   extra_images: '',
   is_best_seller: false,
+  free_shipping: false,
   weight_grams: '500',
   length_cm: '20',
   width_cm: '15',
@@ -506,6 +508,7 @@ export default function CustomPanel() {
         image_url: extractImageUrl(productForm.image_url),
         colors: splitList(productForm.colors),
         is_best_seller: productForm.is_best_seller,
+        free_shipping: productForm.free_shipping,
         weight_grams: Number(productForm.weight_grams),
         length_cm: Number(productForm.length_cm),
         width_cm: Number(productForm.width_cm),
@@ -573,6 +576,7 @@ export default function CustomPanel() {
       image_url: product.image_url || '',
       colors: (product.colors || []).join(', '),
       is_best_seller: Boolean(product.is_best_seller),
+      free_shipping: Boolean(product.free_shipping),
       weight_grams: String(product.weight_grams || 500),
       length_cm: String(product.length_cm || 20),
       width_cm: String(product.width_cm || 15),
@@ -1833,6 +1837,15 @@ export default function CustomPanel() {
                 className="h-4 w-4 accent-purple-600"
               />
               <span>Producto mas vendido</span>
+            </label>
+            <label className={`${labelClass} flex items-center gap-3 rounded-md border border-primary/30 bg-primary/[0.06] p-3`}>
+              <input
+                type="checkbox"
+                checked={productForm.free_shipping}
+                onChange={(e) => setProductForm({ ...productForm, free_shipping: e.target.checked })}
+                className="h-4 w-4 accent-[#55e600]"
+              />
+              <span>Envío gratis</span>
             </label>
             <label className={labelClass}>
               Subir mas imagenes

@@ -169,6 +169,11 @@ export default function ProductDetail() {
               </p>
             </div>
           ) : null}
+          {product.free_shipping ? (
+            <div className="mb-5 ml-0 inline-flex rounded-lg border border-primary/30 bg-primary/[0.08] px-4 py-3 sm:ml-2">
+              <p className="font-black text-primary">Envío gratis</p>
+            </div>
+          ) : null}
           
           <div className="mb-6">
             <p className="text-gray-200 mb-2">

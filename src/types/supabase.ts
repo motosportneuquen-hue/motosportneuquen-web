@@ -10,6 +10,7 @@
   motorcycle_model?: string | null;
   stock: number;
   is_best_seller?: boolean | null;
+  free_shipping?: boolean | null;
   created_at: string;
   category_id?: string;
   colors?: string[] | null;
@@ -32,6 +33,7 @@ export type CartItem = {
   length_cm?: number;
   width_cm?: number;
   height_cm?: number;
+  free_shipping?: boolean;
 };
 
 export type User = {

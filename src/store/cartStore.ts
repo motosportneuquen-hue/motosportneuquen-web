@@ -41,6 +41,7 @@ export const useCartStore = create<CartStore>((set) => ({
             length_cm: product.length_cm,
             width_cm: product.width_cm,
             height_cm: product.height_cm,
+            free_shipping: Boolean(product.free_shipping),
           } as CartItem,
         ],
       };

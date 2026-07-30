@@ -61,6 +61,11 @@ const ProductCard = memo(function ProductCard({ product, onAddToCart }: ProductC
       <div className="relative aspect-square overflow-hidden bg-[#f5f5f5]">
         <img src={product.image_url} alt={product.name} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
         <span className="absolute left-3 top-3 rounded-full bg-black/85 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-white">{product.category}</span>
+        {product.free_shipping ? (
+          <span className="absolute bottom-3 left-3 rounded-full bg-primary px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-black">
+            Envío gratis
+          </span>
+        ) : null}
         {!isOnRequest && product.stock > 0 && product.stock <= 5 && <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_#55e600]" title={`Quedan ${product.stock}`} />}
         {!isOnRequest && product.stock === 0 && <div className="absolute inset-0 flex items-center justify-center bg-black/55"><span className="rounded-full bg-white px-4 py-2 text-xs font-black uppercase text-black">Sin stock</span></div>}
       </div>
