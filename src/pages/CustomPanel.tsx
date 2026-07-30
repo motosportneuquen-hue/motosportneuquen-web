@@ -1653,47 +1653,28 @@ export default function CustomPanel() {
                 });
               }}
             >
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-black text-white">Pedido #{order.id.slice(0, 8).toUpperCase()}</h3>
-                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-bold text-white/60">
-                      {new Date(order.created_at).toLocaleString('es-AR')}
+              <header className="flex flex-col gap-5 border-b border-white/[0.08] pb-5 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-xl font-black text-white">Pedido #{order.id.slice(0, 8).toUpperCase()}</h3>
+                    <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wider ${
+                      order.status === 'delivered' ? 'border-primary/30 bg-primary/10 text-primary'
+                        : order.status === 'cancelled' ? 'border-red-400/30 bg-red-400/10 text-red-300'
+                          : order.status === 'shipped' ? 'border-purple-400/30 bg-purple-400/10 text-purple-300'
+                            : 'border-amber-300/25 bg-amber-300/10 text-amber-200'
+                    }`}>
+                      {orderStatuses.find(([value]) => value === order.status)?.[1] || order.status}
                     </span>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-white/55">
-                    <span>{order.customer_name || 'Cliente sin nombre'}</span>
-                    <span>{order.customer_phone || 'Teléfono por WhatsApp'}</span>
-                    {order.customer_email ? <span>{order.customer_email}</span> : null}
-                    <span>{adminPaymentLabel(order.payment_method)}</span>
-                    {order.coupon_code ? <span className="font-bold text-primary">Cupón {order.coupon_code} · -{formatARS(Math.round(Number(order.discount_amount || 0)))}</span> : null}
-                  </div>
-                  <div className="mt-4 grid gap-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-4 text-sm sm:grid-cols-2">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-primary">Dirección de entrega</p>
-                      <p className="mt-1 text-white/75">
-                        {[order.customer_address, order.customer_locality, order.customer_province].filter(Boolean).join(', ') || 'Sin dirección cargada'}
-                        {order.customer_postal_code ? ` · CP ${order.customer_postal_code}` : ''}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-primary">Observaciones del cliente</p>
-                      <p className="mt-1 whitespace-pre-wrap text-white/75">{order.customer_notes || 'Sin observaciones'}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 divide-y divide-white/[0.06] rounded-lg border border-white/[0.08] bg-black/30">
-                    {(order.order_items || []).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
-                        <span className="min-w-0 text-white/75">{item.quantity} × {item.products?.name || 'Producto'}</span>
-                        <span className="shrink-0 font-bold text-white">{formatARS(Math.round(item.price * item.quantity))}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="mt-1.5 text-sm text-white/40">
+                    {new Date(order.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    {' · '}
+                    {new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-
-                <div className="w-full shrink-0 lg:w-72">
-                  <label className={labelClass}>
-                    Estado
+                <div className="flex items-end justify-between gap-5 md:justify-end">
+                  <label className="block min-w-44 text-xs font-bold uppercase tracking-[0.08em] text-white/50">
+                    Estado del pedido
                     <select
                       className={fieldClass}
                       value={order.status}
@@ -1703,22 +1684,72 @@ export default function CustomPanel() {
                       {orderStatuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </label>
-                  <p className="mt-3 text-right text-2xl font-black text-primary">{formatARS(Math.round(order.total_price || 0))}</p>
+                  <div className="pb-1 text-right">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-white/35">Total</p>
+                    <p className="mt-1 whitespace-nowrap text-2xl font-black text-primary">{formatARS(Math.round(order.total_price || 0))}</p>
+                  </div>
                 </div>
+              </header>
+
+              <div className="grid gap-4 py-5 lg:grid-cols-[1fr_1.15fr]">
+                <section className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Cliente</p>
+                  <p className="mt-3 text-lg font-black text-white">{order.customer_name || 'Cliente sin nombre'}</p>
+                  <div className="mt-3 space-y-2 text-sm text-white/60">
+                    <p className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-white/30" />{order.customer_phone || 'Sin teléfono'}</p>
+                    <p className="flex min-w-0 items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-white/30" /><span className="truncate">{order.customer_email || 'Sin email'}</span></p>
+                    <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white/30" /><span>
+                      {[order.customer_address, order.customer_locality, order.customer_province].filter(Boolean).join(', ') || 'Sin dirección cargada'}
+                      {order.customer_postal_code ? ` · CP ${order.customer_postal_code}` : ''}
+                    </span></p>
+                  </div>
+                  <div className="mt-4 border-t border-white/[0.07] pt-4">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-white/35">Observaciones del cliente</p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-white/60">{order.customer_notes || 'Sin observaciones'}</p>
+                  </div>
+                </section>
+
+                <section className="overflow-hidden rounded-xl border border-white/[0.08] bg-black/25">
+                  <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Productos</p>
+                    <span className="text-xs font-bold text-white/35">{(order.order_items || []).reduce((sum, item) => sum + item.quantity, 0)} unidades</span>
+                  </div>
+                  <div className="divide-y divide-white/[0.06]">
+                    {(order.order_items || []).map((item) => (
+                      <div key={item.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3.5 text-sm">
+                        <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-white/[0.05] px-2 font-black text-white/60">{item.quantity}×</span>
+                        <span className="min-w-0 font-semibold text-white/75">{item.products?.name || 'Producto'}</span>
+                        <span className="shrink-0 font-black text-white">{formatARS(Math.round(item.price * item.quantity))}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] bg-white/[0.025] px-4 py-3 text-sm">
+                    <span className="font-bold text-white/45">Pago: <strong className="text-white/80">{adminPaymentLabel(order.payment_method)}</strong></span>
+                    {order.coupon_code ? <span className="font-bold text-primary">Cupón {order.coupon_code} · -{formatARS(Math.round(Number(order.discount_amount || 0)))}</span> : null}
+                  </div>
+                </section>
               </div>
 
-              <div className="mt-5 grid gap-3 border-t border-white/[0.08] pt-5 sm:grid-cols-2 lg:grid-cols-4">
-                <label className={labelClass}>Transportista<input name="shipping_provider" defaultValue={order.shipping_provider || ''} className={fieldClass} placeholder="Correo Argentino" /></label>
-                <label className={labelClass}>Servicio<input name="shipping_service" defaultValue={order.shipping_service || ''} className={fieldClass} placeholder="Domicilio" /></label>
-                <label className={labelClass}>Seguimiento<input name="tracking_number" defaultValue={order.tracking_number || ''} className={fieldClass} placeholder="Código de seguimiento" /></label>
-                <label className={labelClass}>Nota interna<input name="admin_notes" defaultValue={order.admin_notes || ''} className={fieldClass} placeholder="Observaciones" /></label>
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black disabled:opacity-50">
-                  <Truck className="h-4 w-4" /> Guardar datos de envío
-                </button>
-              </div>
+              <section className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  <Truck className="h-5 w-5 text-primary" />
+                  <div>
+                    <h4 className="font-black text-white">Gestión del envío</h4>
+                    <p className="text-xs text-white/35">Completá estos datos cuando despaches el pedido.</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <label className={labelClass}>Transportista<input name="shipping_provider" defaultValue={order.shipping_provider || ''} className={fieldClass} placeholder="Ej: Correo Argentino" /></label>
+                  <label className={labelClass}>Tipo de servicio<input name="shipping_service" defaultValue={order.shipping_service || ''} className={fieldClass} placeholder="Ej: Envío a domicilio" /></label>
+                  <label className={labelClass}>Código de seguimiento<input name="tracking_number" defaultValue={order.tracking_number || ''} className={fieldClass} placeholder="Ingresá el código" /></label>
+                  <label className={labelClass}>Nota interna<input name="admin_notes" defaultValue={order.admin_notes || ''} className={fieldClass} placeholder="Solo visible para el local" /></label>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button disabled={saving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 font-black text-black transition hover:brightness-110 disabled:opacity-50 sm:w-auto">
+                    <Save className="h-4 w-4" /> Guardar envío
+                  </button>
+                </div>
+              </section>
             </form>
           ))}
         </div>
