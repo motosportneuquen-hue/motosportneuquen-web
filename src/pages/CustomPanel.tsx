@@ -1739,7 +1739,18 @@ export default function CustomPanel() {
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <label className={labelClass}>Transportista<input name="shipping_provider" defaultValue={order.shipping_provider || ''} className={fieldClass} placeholder="Ej: Correo Argentino" /></label>
+                  <label className={labelClass}>
+                    Transportista
+                    <select name="shipping_provider" defaultValue={order.shipping_provider || ''} className={fieldClass}>
+                      <option value="">Seleccionar transportista</option>
+                      <option value="Correo Argentino">Correo Argentino</option>
+                      <option value="Andreani">Andreani</option>
+                      <option value="Vía Cargo">Vía Cargo</option>
+                      {order.shipping_provider && !['Correo Argentino', 'Andreani', 'Vía Cargo'].includes(order.shipping_provider)
+                        ? <option value={order.shipping_provider}>{order.shipping_provider}</option>
+                        : null}
+                    </select>
+                  </label>
                   <label className={labelClass}>Tipo de servicio<input name="shipping_service" defaultValue={order.shipping_service || ''} className={fieldClass} placeholder="Ej: Envío a domicilio" /></label>
                   <label className={labelClass}>Código de seguimiento<input name="tracking_number" defaultValue={order.tracking_number || ''} className={fieldClass} placeholder="Ingresá el código" /></label>
                   <label className={labelClass}>Nota interna<input name="admin_notes" defaultValue={order.admin_notes || ''} className={fieldClass} placeholder="Solo visible para el local" /></label>
