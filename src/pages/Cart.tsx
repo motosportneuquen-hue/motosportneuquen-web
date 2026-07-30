@@ -562,6 +562,7 @@ export default function Cart() {
               <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
                 {paymentOptions.map(({ value, label, hint, icon: Icon }) => {
                   const selected = paymentMethod === value;
+                  const isMercadoPago = value === 'mercado_pago';
                   return (
                     <label
                       key={value}
@@ -579,8 +580,18 @@ export default function Cart() {
                         onChange={() => setPaymentMethod(value)}
                         className="sr-only"
                       />
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${selected ? 'border-primary bg-primary text-black' : 'border-white/15 bg-black text-white/55'}`}>
-                        <Icon className="h-5 w-5" />
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${
+                        selected ? 'border-primary' : 'border-white/15'
+                      } ${isMercadoPago ? 'bg-black' : selected ? 'bg-primary text-black' : 'bg-black text-white/55'}`}>
+                        {isMercadoPago ? (
+                          <img
+                            src="/branding/mercado-pago-logo.png"
+                            alt=""
+                            className="h-[74px] w-[111px] max-w-none -translate-x-[34px] -translate-y-[15px]"
+                          />
+                        ) : (
+                          <Icon className="h-5 w-5" />
+                        )}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-black">{label}</span>
