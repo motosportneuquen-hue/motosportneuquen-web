@@ -286,8 +286,12 @@ export default function Cart() {
         `Quedo atento/a para coordinar.`;
 
       const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
       clearCart();
+      if (paymentMethod === 'transferencia') {
+        window.location.assign(url);
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
       setCheckoutMessage(`Pedido ${orderId} registrado y stock descontado correctamente.`);
       setSubmitting(false);
       return;
@@ -311,6 +315,10 @@ export default function Cart() {
       `Quedo atento/a para coordinar.`;
 
     const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    if (paymentMethod === 'transferencia') {
+      window.location.assign(url);
+      return;
+    }
     window.open(url, '_blank', 'noopener,noreferrer');
     setSubmitting(false);
   };
