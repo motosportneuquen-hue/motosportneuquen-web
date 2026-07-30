@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Banknote, CreditCard, Landmark, WalletCards, TicketPercent } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Banknote, CreditCard, Landmark, WalletCards, TicketPercent, ChevronRight, Check } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
@@ -85,6 +85,7 @@ export default function Cart() {
   const discount = Math.round(subtotal * couponPercent / 100);
   const shipping = selectedShipping?.price || 0;
   const total = subtotal - discount + shipping;
+  const totalItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const hasPendingPrices = cartItems.some((item) => item.price <= 0);
   const hasDemoItems = cartItems.some((item) => item.product_id.startsWith('demo-'));
 
@@ -314,9 +315,22 @@ export default function Cart() {
     setSubmitting(false);
   };
 
+  const buyerDataReady = [
+    buyer.name,
+    buyer.phone,
+    buyer.email,
+    buyer.address,
+    buyer.locality,
+    buyer.province,
+    buyer.postalCode,
+  ].every((value) => value.trim());
+  const checkoutStep = selectedShipping ? 3 : buyerDataReady ? 2 : 1;
+
   return (
     <section className="container py-6 sm:py-10">
-      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">Tu bolsa</h1>
+      <div className="mx-auto max-w-7xl">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">Finalizá tu compra</p>
+      <h1 className="mt-2 text-3xl font-black uppercase text-white sm:text-4xl">Tu bolsa</h1>
 
       {cartItems.length === 0 ? (
         <div className="bg-black/55 backdrop-blur-sm p-8 rounded-lg border border-primary/30 text-center">
@@ -330,8 +344,38 @@ export default function Cart() {
           </Link>
         </div>
       ) : (
-        <div className="mx-auto max-w-5xl space-y-8">
-          <div className="space-y-4">
+        <>
+          <div className="mt-7 grid grid-cols-3 border-y border-white/10 py-4">
+            {[
+              ['1', 'Bolsa'],
+              ['2', 'Entrega'],
+              ['3', 'Pago'],
+            ].map(([number, label], index) => {
+              const step = index + 1;
+              const complete = step < checkoutStep;
+              const active = step === checkoutStep;
+              return (
+                <div key={label} className="relative flex items-center justify-center gap-2">
+                  {index > 0 ? <span className="absolute right-1/2 top-1/2 hidden h-px w-full -translate-y-1/2 bg-white/10 sm:block" /> : null}
+                  <span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black ${
+                    complete ? 'border-primary bg-primary text-black' : active ? 'border-primary bg-black text-primary' : 'border-white/15 bg-black text-white/35'
+                  }`}>
+                    {complete ? <Check className="h-4 w-4" /> : number}
+                  </span>
+                  <span className={`relative z-10 bg-[#080808] pr-2 text-xs font-black uppercase tracking-wider ${active || complete ? 'text-white' : 'text-white/35'}`}>
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <aside className="order-first space-y-3 lg:sticky lg:top-36 lg:order-2">
+            <div className="rounded-xl border border-white/10 bg-[#101010] px-4 py-3">
+              <h2 className="font-black uppercase tracking-wide text-white">Resumen de tu bolsa</h2>
+              <p className="mt-1 text-xs text-white/35">{totalItemCount} {totalItemCount === 1 ? 'producto' : 'productos'}</p>
+            </div>
             {cartItems.map((item) => (
               <div
                 key={item.id}
@@ -374,16 +418,68 @@ export default function Cart() {
               </div>
             ))}
 
-            <div className="mt-6">
-              <Link to="/products" className="inline-flex items-center text-white hover:text-gray-300 transition-colors link-hover">
+            <div className="rounded-xl border border-white/10 bg-[#101010] p-5">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4 text-white/55">
+                  <span>Subtotal</span>
+                  <span className="font-bold text-white">{hasPendingPrices ? formatOrderTotal() : formatARS(Math.round(subtotal))}</span>
+                </div>
+                <div className="flex justify-between gap-4 text-white/55">
+                  <span>Envío</span>
+                  <span className="font-bold text-white">{selectedShipping ? (shipping === 0 ? 'Gratis' : formatARS(Math.round(shipping))) : 'A calcular'}</span>
+                </div>
+                {couponPercent > 0 ? (
+                  <div className="flex justify-between gap-4 text-primary">
+                    <span>Descuento ({couponPercent}%)</span>
+                    <span className="font-black">-{formatARS(discount)}</span>
+                  </div>
+                ) : null}
+              </div>
+              <div className="mt-4 flex items-end justify-between gap-4 border-t border-white/10 pt-4">
+                <span className="font-black text-white">Total</span>
+                <span className="text-right text-2xl font-black text-white">{formatOrderTotal()}</span>
+              </div>
+
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <label htmlFor="coupon-code-summary" className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white/55">
+                  <TicketPercent className="h-4 w-4 text-primary" /> Cupón de descuento
+                </label>
+                <div className="mt-3 flex gap-2">
+                  <input
+                    id="coupon-code-summary"
+                    value={couponCode}
+                    onChange={(event) => {
+                      setCouponCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7));
+                      setCouponPercent(0);
+                      setCouponMessage('');
+                    }}
+                    placeholder="CÓDIGO"
+                    maxLength={7}
+                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black px-3 py-2 font-mono text-sm font-black uppercase tracking-wider text-white outline-none placeholder:text-white/25 focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={validatingCoupon || !couponCode.trim()}
+                    className="rounded-lg border border-primary/40 px-3 text-xs font-black text-primary transition hover:bg-primary hover:text-black disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    {validatingCoupon ? '...' : 'Aplicar'}
+                  </button>
+                </div>
+                {couponMessage ? <p className={`mt-2 text-xs font-semibold ${couponPercent > 0 ? 'text-primary' : 'text-amber-300'}`}>{couponMessage}</p> : null}
+              </div>
+            </div>
+
+            <div>
+              <Link to="/products" className="inline-flex min-h-11 items-center text-white/55 transition hover:text-primary">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Seguir comprando
               </Link>
             </div>
-          </div>
+          </aside>
 
-          <div className="rounded-xl border border-primary/30 bg-black/55 p-4 backdrop-blur-sm sm:p-6 lg:p-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Resumen del pedido</h2>
+          <div className="rounded-xl border border-white/10 bg-[#101010] p-4 backdrop-blur-sm sm:p-6 lg:order-1 lg:p-8">
+            <h2 className="mb-4 text-xl font-black text-white">Datos, entrega y pago</h2>
             {checkoutMessage ? (
               <div className="mb-4 rounded-lg border border-purple-800/70 bg-purple-950/30 p-3 text-sm text-purple-100">
                 {checkoutMessage}
@@ -431,7 +527,7 @@ export default function Cart() {
                 </label>
               </div>
             </div>
-            <div className="mb-5 rounded-lg border border-white/15 bg-white/[0.03] p-4">
+            <div className="hidden">
               <label htmlFor="coupon-code" className="flex items-center gap-2 text-sm font-bold text-white">
                 <TicketPercent className="h-4 w-4 text-primary" />
                 ¿Tenés un cupón?
@@ -460,7 +556,7 @@ export default function Cart() {
               </div>
               {couponMessage ? <p className={`mt-2 text-xs font-semibold ${couponPercent > 0 ? 'text-primary' : 'text-amber-300'}`}>{couponMessage}</p> : null}
             </div>
-            <div className="space-y-2 mb-4">
+            <div className="hidden">
               <div className="flex justify-between gap-4 text-gray-300">
                 <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
                 <span>{hasPendingPrices ? formatOrderTotal() : formatARS(Math.round(subtotal))}</span>
@@ -498,17 +594,17 @@ export default function Cart() {
             />
 
             <fieldset className="mb-5">
-              <legend className="mb-3 text-sm font-bold text-white">Elegí cómo querés pagar</legend>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <legend className="mb-3 text-sm font-black uppercase tracking-wider text-white">Elegí cómo querés pagar</legend>
+              <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
                 {paymentOptions.map(({ value, label, hint, icon: Icon }) => {
                   const selected = paymentMethod === value;
                   return (
                     <label
                       key={value}
-                      className={`flex min-h-24 cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
+                      className={`flex min-h-20 cursor-pointer items-center gap-4 px-2 py-4 transition ${
                         selected
-                          ? 'border-primary bg-primary/[0.09] shadow-[0_0_0_1px_rgba(85,230,0,0.22)]'
-                          : 'border-white/10 bg-white/[0.025] hover:border-white/25'
+                          ? 'bg-primary/[0.04] text-white'
+                          : 'text-white/65 hover:bg-white/[0.025]'
                       }`}
                     >
                       <input
@@ -519,13 +615,14 @@ export default function Cart() {
                         onChange={() => setPaymentMethod(value)}
                         className="sr-only"
                       />
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-primary text-black' : 'bg-white/[0.06] text-white/55'}`}>
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${selected ? 'border-primary bg-primary text-black' : 'border-white/15 bg-black text-white/55'}`}>
                         <Icon className="h-5 w-5" />
                       </span>
-                      <span>
-                        <span className="block font-black text-white">{label}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-black">{label}</span>
                         <span className="mt-0.5 block text-xs leading-snug text-white/40">{hint}</span>
                       </span>
+                      {selected ? <Check className="h-5 w-5 shrink-0 text-primary" /> : <ChevronRight className="h-5 w-5 shrink-0 text-white/25" />}
                     </label>
                   );
                 })}
@@ -536,27 +633,31 @@ export default function Cart() {
             </fieldset>
 
             <button
+              type="button"
               onClick={checkoutByWhatsApp}
               disabled={submitting}
-              className="w-full flex items-center justify-center bg-white text-black px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors btn-hover-scale disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-14 w-full items-center justify-center rounded-xl bg-primary px-6 py-3 font-black uppercase tracking-wide text-black transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
               {submitting
                 ? 'Procesando compra...'
                 : ['mercado_pago', 'tarjeta_credito', 'tarjeta_debito'].includes(paymentMethod)
                   ? 'Continuar a Mercado Pago'
-                  : 'Comprar por WhatsApp'}
+                  : 'Realizar pedido'}
             </button>
 
             <button
+              type="button"
               onClick={clearCart}
-              className="w-full mt-3 flex items-center justify-center bg-gray-800 text-gray-200 px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+              className="mt-3 flex w-full items-center justify-center px-6 py-3 text-xs font-bold text-white/35 transition hover:text-red-300"
             >
               Vaciar bolsa
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
+      </div>
     </section>
   );
 }
