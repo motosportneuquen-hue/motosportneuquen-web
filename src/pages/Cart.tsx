@@ -566,14 +566,14 @@ export default function Cart() {
                         onChange={() => setPaymentMethod(value)}
                         className="sr-only"
                       />
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${
+                      <span className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${
                         selected ? 'border-primary' : 'border-white/15'
                       } ${isMercadoPago ? 'bg-black' : selected ? 'bg-primary text-black' : 'bg-black text-white/55'}`}>
                         {isMercadoPago ? (
                           <img
                             src="/branding/mercado-pago-logo.png"
                             alt=""
-                            className="h-[74px] w-[111px] max-w-none -translate-x-[34px] -translate-y-[15px]"
+                            className="absolute -left-[34px] -top-[15px] h-[74px] w-[111px] max-w-none"
                           />
                         ) : (
                           <Icon className="h-5 w-5" />
