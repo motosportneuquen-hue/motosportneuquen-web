@@ -600,7 +600,11 @@ export default function Cart() {
               type="button"
               onClick={checkoutByWhatsApp}
               disabled={submitting}
-              className="flex min-h-14 w-full items-center justify-center rounded-xl bg-primary px-6 py-3 font-black uppercase tracking-wide text-black transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`flex min-h-14 w-full items-center justify-center rounded-xl px-6 py-3 font-black uppercase tracking-wide text-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                ['mercado_pago', 'tarjeta_credito', 'tarjeta_debito'].includes(paymentMethod)
+                  ? 'bg-[#ffe600] hover:bg-[#ffed4a]'
+                  : 'bg-primary hover:bg-lime-300'
+              }`}
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
               {submitting
