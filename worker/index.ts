@@ -72,6 +72,21 @@ async function updateOrderPayment(env: Env, orderId: string, changes: Record<str
   if (!response.ok) throw new Error('No se pudo actualizar el pago del pedido.');
 }
 
+async function confirmPaidOrder(env: Env, orderId: string, paymentId: string, amount: number) {
+  const response = await supabaseRequest(env, 'rpc/confirm_mercado_pago_order', {
+    method: 'POST',
+    body: JSON.stringify({
+      requested_order_id: orderId,
+      requested_payment_id: paymentId,
+      requested_amount: amount,
+    }),
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(payload?.message || 'No se pudo confirmar el stock del pedido.');
+  }
+}
+
 async function mercadoPagoRequest(env: Env, path: string, init: RequestInit = {}) {
   if (!env.MERCADO_PAGO_ACCESS_TOKEN) throw new Error('Falta configurar Mercado Pago en Cloudflare.');
   const headers = new Headers(init.headers);
@@ -177,15 +192,19 @@ async function handleMercadoPagoWebhook(request: Request, env: Env) {
       return json({ received: true });
     }
 
-    const changes: Record<string, unknown> = {
-      mp_payment_id: String(payment.id || paymentId),
-      mp_status: payment.status || 'unknown',
-    };
     if (payment.status === 'approved') {
-      changes.status = 'confirmed';
-      changes.paid_at = new Date().toISOString();
+      await confirmPaidOrder(
+        env,
+        orderId,
+        String(payment.id || paymentId),
+        Number(payment.transaction_amount)
+      );
+    } else {
+      await updateOrderPayment(env, orderId, {
+        mp_payment_id: String(payment.id || paymentId),
+        mp_status: payment.status || 'unknown',
+      });
     }
-    await updateOrderPayment(env, orderId, changes);
     return json({ received: true });
   } catch {
     return json({ error: 'No se pudo procesar la notificación.' }, 500);

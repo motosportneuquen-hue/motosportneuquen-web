@@ -4,6 +4,7 @@ import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import ShippingSelector, { type ShippingQuote } from '../components/ShippingSelector';
 
 type PaymentMethod = 'efectivo' | 'transferencia' | 'mercado_pago' | 'tarjeta_credito' | 'tarjeta_debito';
 type BuyerData = {
@@ -16,16 +17,6 @@ type BuyerData = {
   postalCode: string;
   notes: string;
 };
-type ShippingQuote = {
-  id: string;
-  provider: string;
-  service: string;
-  deliveryType: string;
-  price: number;
-  deliveryDaysMin?: number;
-  deliveryDaysMax?: number;
-};
-
 const WHATSAPP_PHONE = '5492995343094';
 
 function paymentLabel(method: PaymentMethod) {
@@ -482,65 +473,19 @@ export default function Cart() {
               </div>
             </div>
 
-            <div className="mb-5 rounded-lg border border-white/15 bg-white/[0.03] p-4">
-              <label htmlFor="postal-code" className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
-                <Truck className="h-4 w-4 text-primary" />
-                Calcular envío
-              </label>
-              <p className="mb-3 text-xs text-gray-400">Ingresá el código postal donde querés recibirlo.</p>
-              <div className="flex gap-2">
-                <input
-                  id="postal-code"
-                  value={postalCode}
-                  onChange={(event) => {
-                    const value = event.target.value.toUpperCase();
-                    setPostalCode(value);
-                    setBuyer((current) => ({ ...current, postalCode: value }));
-                  }}
-                  placeholder="Ej: 8300"
-                  maxLength={8}
-                  className="min-w-0 flex-1 rounded-md border border-white/25 bg-black/60 px-3 py-2 text-white outline-none focus:border-primary"
-                />
-                <button
-                  type="button"
-                  onClick={quoteShipping}
-                  disabled={quotingShipping || !postalCode.trim()}
-                  className="rounded-md bg-primary px-3 py-2 font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {quotingShipping ? '...' : 'Calcular'}
-                </button>
-              </div>
-
-              {shippingQuotes.length ? (
-                <div className="mt-3 space-y-2">
-                  {shippingQuotes.map((quote) => (
-                    <label
-                      key={quote.id}
-                      className="flex cursor-pointer items-start gap-3 rounded-md border border-white/15 p-3 hover:border-primary/70"
-                    >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={selectedShipping?.id === quote.id}
-                        onChange={() => setSelectedShipping(quote)}
-                        className="mt-1 accent-[#56f000]"
-                      />
-                      <span className="min-w-0 flex-1 text-sm">
-                        <span className="block font-semibold text-white">{quote.provider} · {quote.deliveryType}</span>
-                        <span className="block text-gray-400">
-                          {quote.service}
-                          {quote.deliveryDaysMin
-                            ? ` · ${quote.deliveryDaysMin}${quote.deliveryDaysMax && quote.deliveryDaysMax !== quote.deliveryDaysMin ? ` a ${quote.deliveryDaysMax}` : ''} días`
-                            : ''}
-                        </span>
-                      </span>
-                      <span className="text-sm font-semibold text-white">{formatARS(Math.round(quote.price))}</span>
-                    </label>
-                  ))}
-                </div>
-              ) : null}
-              {shippingMessage ? <p className="mt-3 text-xs text-amber-300">{shippingMessage}</p> : null}
-            </div>
+            <ShippingSelector
+              postalCode={postalCode}
+              onPostalCodeChange={(value) => {
+                setPostalCode(value);
+                setBuyer((current) => ({ ...current, postalCode: value }));
+              }}
+              onCalculate={quoteShipping}
+              quoting={quotingShipping}
+              quotes={shippingQuotes}
+              selected={selectedShipping}
+              onSelect={setSelectedShipping}
+              message={shippingMessage}
+            />
 
             <fieldset className="mb-5">
               <legend className="mb-3 text-sm font-bold text-white">Elegí cómo querés pagar</legend>
