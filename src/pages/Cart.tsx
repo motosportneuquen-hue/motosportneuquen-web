@@ -390,7 +390,7 @@ export default function Cart() {
                 </div>
                 <div className="flex justify-between gap-4 text-white/55">
                   <span>Envío</span>
-                  <span className="font-bold text-white">{selectedShipping ? (shipping === 0 ? 'Gratis' : formatARS(Math.round(shipping))) : 'A calcular'}</span>
+                  <span className="font-bold text-white">{selectedShipping ? (shipping === 0 ? 'Gratis' : formatARS(Math.round(shipping))) : 'A coordinar'}</span>
                 </div>
                 {couponPercent > 0 ? (
                   <div className="flex justify-between gap-4 text-primary">
@@ -527,7 +527,7 @@ export default function Cart() {
               </div>
               <div className="flex justify-between gap-4 text-gray-300">
                 <span>Envio</span>
-                <span>{selectedShipping ? formatARS(Math.round(shipping)) : 'A calcular'}</span>
+                <span>{selectedShipping ? formatARS(Math.round(shipping)) : 'A coordinar'}</span>
               </div>
               {couponPercent > 0 ? (
                 <div className="flex justify-between gap-4 text-primary">
@@ -542,20 +542,6 @@ export default function Cart() {
                 </div>
               </div>
             </div>
-
-            <ShippingSelector
-              postalCode={postalCode}
-              onPostalCodeChange={(value) => {
-                setPostalCode(value);
-                setBuyer((current) => ({ ...current, postalCode: value }));
-              }}
-              onCalculate={quoteShipping}
-              quoting={quotingShipping}
-              quotes={shippingQuotes}
-              selected={selectedShipping}
-              onSelect={setSelectedShipping}
-              message={shippingMessage}
-            />
 
             <fieldset className="mb-5">
               <legend className="mb-3 text-sm font-black uppercase tracking-wider text-white">Elegí cómo querés pagar</legend>
