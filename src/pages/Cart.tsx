@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Banknote, CreditCard, Landmark, WalletCards, TicketPercent, ChevronRight, Check } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Banknote, CreditCard, Landmark, WalletCards, TicketPercent, ChevronRight, Check, MessageCircle } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
@@ -591,6 +591,14 @@ export default function Cart() {
               <p className="mt-2 text-xs text-gray-400">
                 Mercado Pago procesa de forma segura los pagos con tarjeta. La tienda no solicita ni almacena los datos de tu tarjeta.
               </p>
+              {paymentMethod !== 'efectivo' ? (
+                <div className="mt-4 flex gap-3 rounded-xl border border-primary/25 bg-primary/[0.06] p-4">
+                  <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <p className="text-sm leading-relaxed text-white/65">
+                    Cuando el pago quede acreditado, vas a recibir por WhatsApp el código de seguimiento y las actualizaciones de tu pedido.
+                  </p>
+                </div>
+              ) : null}
             </fieldset>
 
             <button

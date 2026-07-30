@@ -12,9 +12,9 @@ export default function PaymentResult() {
   const Icon = approved ? CheckCircle2 : pending ? Clock3 : XCircle;
   const title = approved ? 'Pago realizado' : pending ? 'Pago pendiente' : 'No se completó el pago';
   const description = approved
-    ? 'Mercado Pago está confirmando la operación. El pedido aparecerá automáticamente en el sistema del local.'
+    ? 'El pago fue acreditado y el pedido quedó confirmado. Vas a recibir por WhatsApp el código de seguimiento y las actualizaciones de tu pedido.'
     : pending
-      ? 'La operación todavía está pendiente. Te avisaremos cuando Mercado Pago la confirme.'
+      ? 'La operación todavía está pendiente. Cuando el pago quede acreditado, vas a recibir por WhatsApp el código de seguimiento y las actualizaciones de tu pedido.'
       : 'No se realizó ningún cobro. Podés volver a tu bolsa e intentarlo nuevamente.';
 
   useEffect(() => {
