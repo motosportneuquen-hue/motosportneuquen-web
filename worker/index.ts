@@ -6,6 +6,9 @@ interface Env {
   CORREO_CUSTOMER_ID?: string;
   MERCADO_PAGO_ACCESS_TOKEN?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
+  RESEND_API_KEY?: string;
+  RESEND_FROM_EMAIL?: string;
+  ORDER_NOTIFICATION_EMAIL?: string;
 }
 
 type QuoteRequest = {
@@ -39,6 +42,53 @@ type StoredOrder = {
   payment_method: string | null;
   customer_email: string | null;
   customer_name: string | null;
+  customer_phone?: string | null;
+  customer_address?: string | null;
+  customer_locality?: string | null;
+  customer_province?: string | null;
+  customer_postal_code?: string | null;
+  shipping_provider?: string | null;
+  shipping_service?: string | null;
+  tracking_number?: string | null;
+  order_items?: Array<{
+    quantity: number;
+    price: number;
+    products?: { name?: string | null } | null;
+  }>;
+};
+
+type OrderEmailEvent = 'created' | 'paid' | 'status';
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(value);
+
+const paymentNames: Record<string, string> = {
+  efectivo: 'Efectivo',
+  transferencia: 'Transferencia',
+  mercado_pago: 'Mercado Pago',
+  tarjeta_credito: 'Tarjeta de crédito',
+  tarjeta_debito: 'Tarjeta de débito',
+};
+
+const statusNames: Record<string, string> = {
+  pending: 'Pendiente',
+  confirmed: 'Confirmado',
+  preparing: 'En preparación',
+  shipped: 'Enviado',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
 };
 
 async function supabaseRequest(env: Env, path: string, init: RequestInit = {}) {
@@ -61,6 +111,166 @@ async function readOrder(env: Env, orderId: string) {
   if (!response.ok) throw new Error('No se pudo consultar el pedido.');
   const orders = (await response.json()) as StoredOrder[];
   return orders[0] || null;
+}
+
+async function readOrderDetails(env: Env, orderId: string) {
+  const select = [
+    'id', 'total_price', 'status', 'payment_method', 'customer_email', 'customer_name',
+    'customer_phone', 'customer_address', 'customer_locality', 'customer_province',
+    'customer_postal_code', 'shipping_provider', 'shipping_service', 'tracking_number',
+    'order_items(quantity,price,products(name))',
+  ].join(',');
+  const response = await supabaseRequest(
+    env,
+    `orders?select=${encodeURIComponent(select)}&id=eq.${encodeURIComponent(orderId)}&limit=1`
+  );
+  if (!response.ok) throw new Error('No se pudo consultar el detalle del pedido.');
+  const orders = (await response.json()) as StoredOrder[];
+  return orders[0] || null;
+}
+
+function emailFrame(title: string, preheader: string, content: string) {
+  return `<!doctype html>
+  <html lang="es">
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+    <body style="margin:0;background:#070707;color:#f5f5f5;font-family:Arial,sans-serif">
+      <div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>
+      <div style="max-width:620px;margin:0 auto;padding:28px 16px">
+        <div style="border:1px solid #262626;border-radius:18px;overflow:hidden;background:#111">
+          <div style="height:6px;background:linear-gradient(90deg,#52ed00,#b000ef)"></div>
+          <div style="padding:26px">
+            <p style="margin:0 0 8px;color:#52ed00;font-size:12px;font-weight:800;letter-spacing:2px">MOTOSPORT NEUQUÉN</p>
+            <h1 style="margin:0 0 22px;font-size:28px;line-height:1.15">${escapeHtml(title)}</h1>
+            ${content}
+          </div>
+        </div>
+        <p style="margin:16px 0 0;text-align:center;color:#777;font-size:12px">
+          Cacique Catriel 154, Neuquén · WhatsApp 299 534-3094
+        </p>
+      </div>
+    </body>
+  </html>`;
+}
+
+function orderItemsHtml(order: StoredOrder) {
+  const rows = (order.order_items || []).map((item) => {
+    const name = item.products?.name || 'Producto';
+    return `<tr>
+      <td style="padding:10px 0;border-bottom:1px solid #292929;color:#eee">${escapeHtml(name)} × ${item.quantity}</td>
+      <td style="padding:10px 0;border-bottom:1px solid #292929;text-align:right;color:#eee">${escapeHtml(formatMoney(Number(item.price) * item.quantity))}</td>
+    </tr>`;
+  }).join('');
+  return `<table role="presentation" style="width:100%;border-collapse:collapse;margin:18px 0">${rows}</table>`;
+}
+
+async function sendOrderEmails(env: Env, order: StoredOrder, event: OrderEmailEvent) {
+  if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL || !env.ORDER_NOTIFICATION_EMAIL) {
+    throw new Error('Falta configurar Resend en Cloudflare.');
+  }
+
+  const shortId = order.id.slice(0, 8).toUpperCase();
+  const state = statusNames[order.status] || order.status;
+  const eventTitle = event === 'paid'
+    ? 'Pago confirmado'
+    : event === 'status'
+      ? `Pedido ${state.toLowerCase()}`
+      : 'Pedido recibido';
+  const address = [
+    order.customer_address,
+    order.customer_locality,
+    order.customer_province,
+    order.customer_postal_code ? `CP ${order.customer_postal_code}` : null,
+  ].filter(Boolean).join(', ');
+  const shipment = [order.shipping_provider, order.shipping_service].filter(Boolean).join(' · ') || 'A coordinar';
+  const tracking = order.tracking_number
+    ? `<p style="margin:8px 0"><strong>Seguimiento:</strong> ${escapeHtml(order.tracking_number)}</p>`
+    : '';
+
+  const summary = `
+    <div style="border-radius:12px;background:#090909;padding:16px;color:#cfcfcf">
+      <p style="margin:0 0 8px"><strong style="color:#fff">Pedido:</strong> #${shortId}</p>
+      <p style="margin:0 0 8px"><strong style="color:#fff">Estado:</strong> ${escapeHtml(state)}</p>
+      <p style="margin:0 0 8px"><strong style="color:#fff">Pago:</strong> ${escapeHtml(paymentNames[order.payment_method || ''] || order.payment_method || 'A coordinar')}</p>
+      <p style="margin:0 0 8px"><strong style="color:#fff">Entrega:</strong> ${escapeHtml(shipment)}</p>
+      ${tracking}
+      <p style="margin:0"><strong style="color:#fff">Dirección:</strong> ${escapeHtml(address || 'A coordinar')}</p>
+    </div>
+    ${orderItemsHtml(order)}
+    <p style="margin:18px 0 0;font-size:22px;font-weight:800;color:#52ed00">Total: ${escapeHtml(formatMoney(Number(order.total_price)))}</p>`;
+
+  const customerHtml = emailFrame(
+    eventTitle,
+    `${eventTitle} · Pedido #${shortId}`,
+    `<p style="color:#bbb;line-height:1.6">Hola ${escapeHtml(order.customer_name || '')}, te informamos el estado de tu compra.</p>${summary}`
+  );
+  const adminHtml = emailFrame(
+    `${eventTitle}: #${shortId}`,
+    `Novedad del pedido #${shortId}`,
+    `<div style="color:#bbb;line-height:1.6">
+      <p><strong style="color:#fff">Cliente:</strong> ${escapeHtml(order.customer_name || 'Sin nombre')}</p>
+      <p><strong style="color:#fff">Celular:</strong> ${escapeHtml(order.customer_phone || 'Sin celular')}</p>
+      <p><strong style="color:#fff">Email:</strong> ${escapeHtml(order.customer_email || 'Sin email')}</p>
+    </div>${summary}`
+  );
+
+  const emails: Array<Record<string, unknown>> = [{
+    from: env.RESEND_FROM_EMAIL,
+    to: [env.ORDER_NOTIFICATION_EMAIL],
+    reply_to: order.customer_email || undefined,
+    subject: `${eventTitle} · Pedido #${shortId}`,
+    html: adminHtml,
+  }];
+  if (order.customer_email) {
+    emails.push({
+      from: env.RESEND_FROM_EMAIL,
+      to: [order.customer_email],
+      reply_to: env.ORDER_NOTIFICATION_EMAIL,
+      subject: `${eventTitle} · Pedido #${shortId}`,
+      html: customerHtml,
+    });
+  }
+
+  const response = await fetch('https://api.resend.com/emails/batch', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY.trim()}`,
+      'Content-Type': 'application/json',
+      'Idempotency-Key': `motosport-${event}-${order.status}-${order.id}`,
+    },
+    body: JSON.stringify(emails),
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(payload?.message || `Resend rechazó el envío (${response.status}).`);
+  }
+}
+
+async function handleOrderNotification(request: Request, env: Env) {
+  let body: { orderId?: string; event?: OrderEmailEvent };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Solicitud inválida.' }, 400);
+  }
+  const orderId = String(body.orderId || '').trim();
+  const event = body.event;
+  if (!validUuid(orderId) || !event || !['created', 'paid', 'status'].includes(event)) {
+    return json({ error: 'Notificación inválida.' }, 400);
+  }
+  try {
+    const order = await readOrderDetails(env, orderId);
+    if (!order) return json({ error: 'El pedido no existe.' }, 404);
+    if (event === 'created' && ['mercado_pago', 'tarjeta_credito', 'tarjeta_debito'].includes(order.payment_method || '')) {
+      return json({ error: 'El pedido online todavía no está pagado.' }, 409);
+    }
+    if (event === 'paid' && order.status !== 'confirmed') {
+      return json({ error: 'El pago todavía no está confirmado.' }, 409);
+    }
+    await sendOrderEmails(env, order, event);
+    return json({ sent: true });
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'No se pudo enviar la notificación.' }, 502);
+  }
 }
 
 async function updateOrderPayment(env: Env, orderId: string, changes: Record<string, unknown>) {
@@ -158,7 +368,7 @@ async function createMercadoPagoPreference(request: Request, env: Env) {
   }
 }
 
-async function handleMercadoPagoWebhook(request: Request, env: Env) {
+async function handleMercadoPagoWebhook(request: Request, env: Env, ctx: ExecutionContext) {
   try {
     const url = new URL(request.url);
     let body: { data?: { id?: string | number }; type?: string } = {};
@@ -198,6 +408,11 @@ async function handleMercadoPagoWebhook(request: Request, env: Env) {
         orderId,
         String(payment.id || paymentId),
         Number(payment.transaction_amount)
+      );
+      ctx.waitUntil(
+        readOrderDetails(env, orderId)
+          .then((paidOrder) => paidOrder ? sendOrderEmails(env, paidOrder, 'paid') : undefined)
+          .catch(() => undefined)
       );
     } else {
       await updateOrderPayment(env, orderId, {
@@ -320,7 +535,7 @@ async function handleQuote(request: Request, env: Env) {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/api/shipping/quote') {
       if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
@@ -332,7 +547,11 @@ export default {
     }
     if (url.pathname === '/api/payments/mercadopago/webhook') {
       if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
-      return handleMercadoPagoWebhook(request, env);
+      return handleMercadoPagoWebhook(request, env, ctx);
+    }
+    if (url.pathname === '/api/notifications/order') {
+      if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
+      return handleOrderNotification(request, env);
     }
     return env.ASSETS.fetch(request);
   },

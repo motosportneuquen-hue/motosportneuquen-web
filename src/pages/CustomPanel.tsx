@@ -821,7 +821,16 @@ export default function CustomPanel() {
 
     setMessage(error ? `No se pudo actualizar el pedido: ${error.message}` : 'Pedido actualizado correctamente.');
     setSaving(false);
-    if (!error) await loadData();
+    if (!error) {
+      if (changes.status) {
+        fetch('/api/notifications/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, event: 'status' }),
+        }).catch(() => undefined);
+      }
+      await loadData();
+    }
   };
 
   const updateProductCost = async (productId: string, value: string) => {

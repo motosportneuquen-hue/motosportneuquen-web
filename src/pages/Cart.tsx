@@ -262,6 +262,12 @@ export default function Cart() {
         }
       }
 
+      fetch('/api/notifications/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, event: 'created' }),
+      }).catch(() => undefined);
+
       const lines = cartItems.map((item, index) => {
         const colorText = item.color ? ` | Color: ${item.color}` : '';
         return `${index + 1}. ${item.name}${colorText} | Cantidad: ${item.quantity} | Unit: ${formatItemPrice(item.price)} | Subtotal: ${formatItemPrice(item.price * item.quantity)}`;
