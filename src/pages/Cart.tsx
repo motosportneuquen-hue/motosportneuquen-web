@@ -315,17 +315,6 @@ export default function Cart() {
     setSubmitting(false);
   };
 
-  const buyerDataReady = [
-    buyer.name,
-    buyer.phone,
-    buyer.email,
-    buyer.address,
-    buyer.locality,
-    buyer.province,
-    buyer.postalCode,
-  ].every((value) => value.trim());
-  const checkoutStep = selectedShipping ? 3 : buyerDataReady ? 2 : 1;
-
   return (
     <section className="container py-6 sm:py-10">
       <div className="mx-auto max-w-7xl">
@@ -345,32 +334,7 @@ export default function Cart() {
         </div>
       ) : (
         <>
-          <div className="mt-7 grid grid-cols-3 border-y border-white/10 py-4">
-            {[
-              ['1', 'Bolsa'],
-              ['2', 'Entrega'],
-              ['3', 'Pago'],
-            ].map(([number, label], index) => {
-              const step = index + 1;
-              const complete = step < checkoutStep;
-              const active = step === checkoutStep;
-              return (
-                <div key={label} className="relative flex items-center justify-center gap-2">
-                  {index > 0 ? <span className="absolute right-1/2 top-1/2 hidden h-px w-full -translate-y-1/2 bg-white/10 sm:block" /> : null}
-                  <span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-black ${
-                    complete ? 'border-primary bg-primary text-black' : active ? 'border-primary bg-black text-primary' : 'border-white/15 bg-black text-white/35'
-                  }`}>
-                    {complete ? <Check className="h-4 w-4" /> : number}
-                  </span>
-                  <span className={`relative z-10 bg-[#080808] pr-2 text-xs font-black uppercase tracking-wider ${active || complete ? 'text-white' : 'text-white/35'}`}>
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <aside className="order-first space-y-3 lg:sticky lg:top-36 lg:order-2">
             <div className="rounded-xl border border-white/10 bg-[#101010] px-4 py-3">
               <h2 className="font-black uppercase tracking-wide text-white">Resumen de tu bolsa</h2>
