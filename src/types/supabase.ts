@@ -25,6 +25,7 @@ export type CartItem = {
   product_id: string;
   name: string;
   price: number;
+  transfer_price?: number | null;
   image: string;
   quantity: number;
   stock: number;

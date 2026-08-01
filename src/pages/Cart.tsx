@@ -3,8 +3,10 @@ import { ShoppingCart, Trash2, ArrowLeft, Plus, Minus, Banknote, CreditCard, Lan
 import { useCartStore } from '../store/cartStore';
 import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
+import { cartItemUnitPrice } from '../lib/cartPricing';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import ShippingSelector, { type ShippingQuote } from '../components/ShippingSelector';
+import { type ShippingQuote } from '../components/ShippingSelector';
+import { type CartItem } from '../types/supabase';
 
 type PaymentMethod = 'efectivo' | 'transferencia' | 'mercado_pago' | 'tarjeta_credito' | 'tarjeta_debito';
 type BuyerData = {
@@ -57,11 +59,7 @@ export default function Cart() {
   const [couponPercent, setCouponPercent] = useState(0);
   const [couponMessage, setCouponMessage] = useState('');
   const [validatingCoupon, setValidatingCoupon] = useState(false);
-  const [postalCode, setPostalCode] = useState('');
-  const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([]);
-  const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null);
-  const [shippingMessage, setShippingMessage] = useState('');
-  const [quotingShipping, setQuotingShipping] = useState(false);
+  const [selectedShipping] = useState<ShippingQuote | null>(null);
   const [buyer, setBuyer] = useState<BuyerData>({
     name: '',
     phone: '',
@@ -81,12 +79,13 @@ export default function Cart() {
     }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemUnitPrice = (item: CartItem) => cartItemUnitPrice(item, paymentMethod);
+  const subtotal = cartItems.reduce((sum, item) => sum + itemUnitPrice(item) * item.quantity, 0);
   const discount = Math.round(subtotal * couponPercent / 100);
   const shipping = selectedShipping?.price || 0;
   const total = subtotal - discount + shipping;
   const totalItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const hasPendingPrices = cartItems.some((item) => item.price <= 0);
+  const hasPendingPrices = cartItems.some((item) => itemUnitPrice(item) <= 0);
   const hasDemoItems = cartItems.some((item) => item.product_id.startsWith('demo-'));
 
   const formatItemPrice = (price: number) =>
@@ -117,68 +116,6 @@ export default function Cart() {
       setCouponMessage(`Cupón aplicado: ${coupon.discount_percent}% de descuento.`);
     }
     setValidatingCoupon(false);
-  };
-
-  const quoteShipping = async () => {
-    setQuotingShipping(true);
-    setShippingMessage('');
-    setShippingQuotes([]);
-    setSelectedShipping(null);
-
-    if (cartItems.length > 0 && cartItems.every((item) => item.free_shipping)) {
-      const freeQuote: ShippingQuote = {
-        id: 'free-shipping',
-        provider: 'MotoSport Neuquén',
-        service: 'Envío gratis',
-        deliveryType: 'A coordinar',
-        price: 0,
-      };
-      setShippingQuotes([freeQuote]);
-      setSelectedShipping(freeQuote);
-      setShippingMessage('Este pedido tiene envío gratis.');
-      setQuotingShipping(false);
-      return;
-    }
-
-    const missingDimensions = cartItems.some(
-      (item) => !item.weight_grams || !item.length_cm || !item.width_cm || !item.height_cm
-    );
-    if (missingDimensions) {
-      setShippingMessage('Hay productos sin peso o medidas. Podés pedir el envío por WhatsApp.');
-      setQuotingShipping(false);
-      return;
-    }
-
-    const parcel = {
-      weightGrams: cartItems.reduce((sum, item) => sum + Number(item.weight_grams) * item.quantity, 0),
-      lengthCm: Math.max(...cartItems.map((item) => Number(item.length_cm))),
-      widthCm: Math.max(...cartItems.map((item) => Number(item.width_cm))),
-      heightCm: cartItems.reduce((sum, item) => sum + Number(item.height_cm) * item.quantity, 0),
-    };
-
-    try {
-      const response = await fetch('/api/shipping/quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destinationPostalCode: postalCode, parcel }),
-      });
-      const payload = (await response.json()) as {
-        quotes?: ShippingQuote[];
-        unavailable?: Array<{ provider: string; reason: string }>;
-        error?: string;
-      };
-      if (!response.ok) throw new Error(payload.error || 'No se pudo calcular el envío.');
-
-      const quotes = payload.quotes || [];
-      setShippingQuotes(quotes);
-      if (quotes.length) setSelectedShipping(quotes[0]);
-      const notices = (payload.unavailable || []).map((item) => `${item.provider}: ${item.reason}`);
-      if (!quotes.length || notices.length) setShippingMessage(notices.join(' '));
-    } catch (error) {
-      setShippingMessage(error instanceof Error ? error.message : 'No se pudo calcular el envío.');
-    } finally {
-      setQuotingShipping(false);
-    }
   };
 
   const checkoutByWhatsApp = async () => {
@@ -213,7 +150,7 @@ export default function Cart() {
       const orderItems = cartItems.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
-        price: item.price,
+        price: itemUnitPrice(item),
       }));
 
       const { data, error } = await supabase.rpc('create_order_with_items', {
@@ -271,7 +208,8 @@ export default function Cart() {
 
       const lines = cartItems.map((item, index) => {
         const colorText = item.color ? ` | Color: ${item.color}` : '';
-        return `${index + 1}. ${item.name}${colorText} | Cantidad: ${item.quantity} | Unit: ${formatItemPrice(item.price)} | Subtotal: ${formatItemPrice(item.price * item.quantity)}`;
+        const unitPrice = itemUnitPrice(item);
+        return `${index + 1}. ${item.name}${colorText} | Cantidad: ${item.quantity} | Unit: ${formatItemPrice(unitPrice)} | Subtotal: ${formatItemPrice(unitPrice * item.quantity)}`;
       });
 
       const message =
@@ -299,7 +237,8 @@ export default function Cart() {
 
     const lines = cartItems.map((item, index) => {
       const colorText = item.color ? ` | Color: ${item.color}` : '';
-      return `${index + 1}. ${item.name}${colorText} | Cantidad: ${item.quantity} | Unit: ${formatItemPrice(item.price)} | Subtotal: ${formatItemPrice(item.price * item.quantity)}`;
+      const unitPrice = itemUnitPrice(item);
+      return `${index + 1}. ${item.name}${colorText} | Cantidad: ${item.quantity} | Unit: ${formatItemPrice(unitPrice)} | Subtotal: ${formatItemPrice(unitPrice * item.quantity)}`;
     });
 
     const message =
@@ -357,7 +296,12 @@ export default function Cart() {
                   <img src={item.image} alt={item.name} className="mr-3 h-20 w-20 shrink-0 rounded-md object-cover sm:mr-4 sm:h-16 sm:w-16" />
                   <div className="min-w-0">
                     <h2 className="break-words text-base font-semibold text-white sm:text-lg">{item.name}</h2>
-                    <p className="text-gray-300">{formatItemPrice(item.price)}</p>
+                    <p className={paymentMethod === 'transferencia' && Number(item.transfer_price) > 0 ? 'font-bold text-primary' : 'text-gray-300'}>
+                      {formatItemPrice(itemUnitPrice(item))}
+                    </p>
+                    {paymentMethod === 'transferencia' && Number(item.transfer_price) > 0 ? (
+                      <p className="mt-1 text-xs font-bold text-primary/80">Precio por transferencia</p>
+                    ) : null}
                     {item.color ? <p className="text-sm text-gray-200">Color: {item.color}</p> : null}
                     <div className="flex items-center mt-2">
                       <button
@@ -382,7 +326,7 @@ export default function Cart() {
                   </div>
                 </div>
                 <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-end">
-                  <p className="font-semibold text-white mb-2">{formatItemPrice(item.price * item.quantity)}</p>
+                  <p className="font-semibold text-white mb-2">{formatItemPrice(itemUnitPrice(item) * item.quantity)}</p>
                   <button type="button" onClick={() => removeItem(item.id)} aria-label={`Quitar ${item.name} de la bolsa`} className="flex h-11 w-11 items-center justify-center text-purple-400 transition-colors hover:text-gray-300">
                     <Trash2 className="h-5 w-5" />
                   </button>
@@ -480,7 +424,6 @@ export default function Cart() {
                       onChange={(event) => {
                         const value = key === 'postalCode' ? event.target.value.toUpperCase() : event.target.value;
                         setBuyer((current) => ({ ...current, [key]: value }));
-                        if (key === 'postalCode') setPostalCode(value);
                       }}
                       placeholder={placeholder}
                       className="mt-1.5 min-h-11 w-full rounded-md border border-white/20 bg-black/60 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-primary"
