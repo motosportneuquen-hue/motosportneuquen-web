@@ -282,11 +282,19 @@ export default function CustomPanel() {
     [orders]
   );
 
-  const stats = useMemo(() => {
-    return calculateOrderMetrics(visibleOrders, products.map((product) => Number(product.stock || 0)));
-  }, [products, visibleOrders]);
+  const metricOrders = useMemo(
+    () => visibleOrders.filter((order) => order.source !== 'admin_test'),
+    [visibleOrders]
+  );
 
-  const profitability = useMemo(() => calculateProfitability(orders), [orders]);
+  const stats = useMemo(() => {
+    return calculateOrderMetrics(metricOrders, products.map((product) => Number(product.stock || 0)));
+  }, [metricOrders, products]);
+
+  const profitability = useMemo(
+    () => calculateProfitability(orders.filter((order) => order.source !== 'admin_test')),
+    [orders]
+  );
 
   const customers = useMemo(() => {
     const grouped = new Map<string, AdminCustomer>();
@@ -1523,6 +1531,11 @@ export default function CustomPanel() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-xl font-black text-white">Pedido #{order.id.slice(0, 8).toUpperCase()}</h3>
+                    {order.source === 'admin_test' ? (
+                      <span className="rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-cyan-200">
+                        Pedido de prueba
+                      </span>
+                    ) : null}
                     <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wider ${
                       order.status === 'delivered' ? 'border-primary/30 bg-primary/10 text-primary'
                         : order.status === 'cancelled' ? 'border-red-400/30 bg-red-400/10 text-red-300'
