@@ -1,10 +1,10 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
-import { BarChart3, Calculator, CheckCircle, Download, Edit, Mail, MapPin, MessageCircle, PackageCheck, Phone, RefreshCw, Save, Search, TicketPercent, Trash2, Truck, Users } from 'lucide-react';
+import { BarChart3, Calculator, Edit, Mail, MapPin, MessageCircle, PackageCheck, Phone, RefreshCw, Save, Search, TicketPercent, Trash2, Truck, Users } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
-import { Category, Offer, Product, ProductImage, Testimonial } from '../types/supabase';
+import { Category, Offer, Product, ProductImage } from '../types/supabase';
 import { formatARS } from '../lib/currency';
 import { calculateOrderMetrics, calculateProfitability } from '../lib/orderMetrics';
 
@@ -37,41 +37,9 @@ type CategoryForm = {
   orden: string;
 };
 
-type DebtorForm = {
-  id?: string;
-  debtor_name: string;
-  amount_due: string;
-  product_name: string;
-  phone: string;
-  dni: string;
-  due_date: string;
-};
-
-type TestimonialForm = {
-  id?: string;
-  nombre: string;
-  mensaje: string;
-  foto_url: string;
-  activo: boolean;
-  orden: string;
-};
-
 type AdminCategory = Category & {
   activo?: boolean;
   orden?: number;
-};
-
-type AdminDebtor = {
-  id: string;
-  debtor_name: string;
-  phone?: string | null;
-  dni?: string | null;
-  product_name: string;
-  amount_due: number;
-  due_date?: string | null;
-  paid_at?: string | null;
-  status?: string | null;
-  created_at: string;
 };
 
 type AdminMotorcycleModel = {
@@ -180,23 +148,6 @@ const emptyProduct: ProductForm = {
   height_cm: '10',
 };
 
-const emptyDebtor: DebtorForm = {
-  debtor_name: '',
-  amount_due: '',
-  product_name: '',
-  phone: '',
-  dni: '',
-  due_date: '',
-};
-
-const emptyTestimonial: TestimonialForm = {
-  nombre: '',
-  mensaje: '',
-  foto_url: '',
-  activo: true,
-  orden: '0',
-};
-
 const emptyCategory: CategoryForm = {
   name: '',
   description: '',
@@ -295,11 +246,9 @@ function normalizeMatch(value: string) {
 
 export default function CustomPanel() {
   const { user, profile, loading } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'customers' | 'coupons' | 'products' | 'categories' | 'models' | 'offers' | 'testimonials' | 'debtors' | 'orders'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'costs' | 'customers' | 'coupons' | 'products' | 'categories' | 'models' | 'offers' | 'orders'>('metrics');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [debtors, setDebtors] = useState<AdminDebtor[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [motorcycleModels, setMotorcycleModels] = useState<AdminMotorcycleModel[]>([]);
   const [motorcycleBrands, setMotorcycleBrands] = useState<AdminMotorcycleBrand[]>([]);
@@ -317,8 +266,6 @@ export default function CustomPanel() {
   const [productImages, setProductImages] = useState<Record<string, ProductImage[]>>({});
   const [productForm, setProductForm] = useState<ProductForm>(emptyProduct);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(emptyCategory);
-  const [testimonialForm, setTestimonialForm] = useState<TestimonialForm>(emptyTestimonial);
-  const [debtorForm, setDebtorForm] = useState<DebtorForm>(emptyDebtor);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -425,16 +372,6 @@ export default function CustomPanel() {
     });
   }, [offerCategoryFilter, offerProductSearch, sortedProducts]);
 
-  const pendingDebtors = useMemo(
-    () => debtors.filter((debtor) => debtor.status !== 'paid' && !debtor.paid_at),
-    [debtors]
-  );
-
-  const paidDebtors = useMemo(
-    () => debtors.filter((debtor) => debtor.status === 'paid' || debtor.paid_at),
-    [debtors]
-  );
-
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => {
       const orderCompare = Number(a.orden || 0) - Number(b.orden || 0);
@@ -448,25 +385,15 @@ export default function CustomPanel() {
     [motorcycleModels]
   );
 
-  const sortedTestimonials = useMemo(() => {
-    return [...testimonials].sort((a, b) => {
-      const orderCompare = Number(a.orden || 0) - Number(b.orden || 0);
-      if (orderCompare !== 0) return orderCompare;
-      return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
-    });
-  }, [testimonials]);
-
   const loadData = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
     setRefreshing(true);
     try {
 
-    const [{ data: productData, error: productError }, { data: categoryData, error: categoryError }, { data: testimonialsData, error: testimonialError }, { data: imagesData, error: imagesError }, { data: debtorsData, error: debtorsError }, { data: ordersData, error: ordersError }, { data: modelsData, error: modelsError }, { data: brandsData, error: brandsError }, { data: offersData, error: offersError }, { data: couponsData, error: couponsError }] = await Promise.all([
+    const [{ data: productData, error: productError }, { data: categoryData, error: categoryError }, { data: imagesData, error: imagesError }, { data: ordersData, error: ordersError }, { data: modelsData, error: modelsError }, { data: brandsData, error: brandsError }, { data: offersData, error: offersError }, { data: couponsData, error: couponsError }] = await Promise.all([
       supabase.from('products').select('*').order('category', { ascending: true }).order('name', { ascending: true }),
       supabase.from('categories').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
-      supabase.from('testimonials').select('*').order('orden', { ascending: true }).order('created_at', { ascending: false }),
       supabase.from('product_images').select('*').order('display_order', { ascending: true }),
-      supabase.from('debtors').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*, order_items(id, quantity, price, cost_price, products(name, cost_price))').order('created_at', { ascending: false }),
       supabase.from('motorcycle_models').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
       supabase.from('motorcycle_brands').select('*').order('orden', { ascending: true }).order('name', { ascending: true }),
@@ -474,8 +401,8 @@ export default function CustomPanel() {
       supabase.from('coupons').select('*').order('created_at', { ascending: false }),
     ]);
 
-    const loadError = productError || categoryError || testimonialError || imagesError || debtorsError
-      || ordersError || modelsError || brandsError || offersError || couponsError;
+    const loadError = productError || categoryError || imagesError || ordersError
+      || modelsError || brandsError || offersError || couponsError;
     if (loadError) {
       setMessage(`No se pudo actualizar todo el panel: ${loadError.message}`);
       return;
@@ -483,8 +410,6 @@ export default function CustomPanel() {
 
     setProducts((productData || []) as Product[]);
     setCategories((categoryData || []) as AdminCategory[]);
-    setTestimonials((testimonialsData || []) as Testimonial[]);
-    setDebtors((debtorsData || []) as AdminDebtor[]);
     setOrders((ordersData || []) as AdminOrder[]);
     setMotorcycleModels((modelsData || []) as AdminMotorcycleModel[]);
     setMotorcycleBrands((brandsData || []) as AdminMotorcycleBrand[]);
@@ -651,53 +576,6 @@ export default function CustomPanel() {
     await loadData();
   };
 
-  const saveTestimonial = async (event: FormEvent) => {
-    event.preventDefault();
-    setSaving(true);
-    setMessage('');
-
-    const nextOrder = testimonials.reduce((max, testimonial) => Math.max(max, Number(testimonial.orden || 0)), 0) + 1;
-
-    const payload = {
-      nombre: testimonialForm.nombre.trim(),
-      mensaje: testimonialForm.mensaje.trim(),
-      foto_url: sharedBrandImage,
-      activo: testimonialForm.activo,
-      orden: testimonialForm.id ? Number(testimonialForm.orden || 0) : nextOrder,
-    };
-
-    const request = testimonialForm.id
-      ? supabase.from('testimonials').update(payload).eq('id', testimonialForm.id)
-      : supabase.from('testimonials').insert(payload);
-
-    const { error } = await request;
-    setMessage(error ? `No se pudo guardar la reseña: ${error.message}` : 'Reseña guardada correctamente.');
-    if (!error) {
-      setTestimonialForm(emptyTestimonial);
-    }
-    setSaving(false);
-    await loadData();
-  };
-
-  const editTestimonial = (testimonial: Testimonial) => {
-    setTestimonialForm({
-      id: testimonial.id,
-      nombre: testimonial.nombre || '',
-      mensaje: testimonial.mensaje || '',
-      foto_url: testimonial.foto_url || '',
-      activo: Boolean(testimonial.activo),
-      orden: String(testimonial.orden ?? 0),
-    });
-    setActiveTab('testimonials');
-  };
-
-  const deleteTestimonial = async (testimonialId: string) => {
-    if (!confirm('Seguro que queres borrar esta reseña?')) return;
-    const { error } = await supabase.from('testimonials').delete().eq('id', testimonialId);
-    setMessage(error ? `No se pudo borrar la reseña: ${error.message}` : 'Reseña eliminada.');
-    await loadData();
-  };
-
   const uploadProductFiles = async (files: FileList | File[] | null, mode: 'main' | 'extra') => {
     const filesToUpload = files ? Array.from(files) : [];
     if (filesToUpload.length === 0) return;
@@ -767,59 +645,6 @@ export default function CustomPanel() {
     await supabase.from('product_images').delete().eq('product_id', productId);
     const { error } = await supabase.from('products').delete().eq('id', productId);
     setMessage(error ? `No se pudo borrar: ${error.message}` : 'Producto eliminado.');
-    await loadData();
-  };
-
-  const saveDebtor = async (event: FormEvent) => {
-    event.preventDefault();
-    setSaving(true);
-    const payload = {
-      debtor_name: debtorForm.debtor_name.trim(),
-      amount_due: Number(debtorForm.amount_due),
-      product_name: debtorForm.product_name.trim(),
-      phone: debtorForm.phone.trim() || null,
-      dni: debtorForm.dni.trim() || null,
-      due_date: debtorForm.due_date || null,
-      status: 'pending',
-      paid_at: null,
-    };
-    const request = debtorForm.id
-      ? supabase.from('debtors').update(payload).eq('id', debtorForm.id)
-      : supabase.from('debtors').insert(payload);
-    const { error } = await request;
-    setMessage(error ? `No se pudo guardar el deudor: ${error.message}` : 'Deudor guardado correctamente.');
-    setDebtorForm(emptyDebtor);
-    setSaving(false);
-    await loadData();
-  };
-
-  const editDebtor = (debtor: AdminDebtor) => {
-    setDebtorForm({
-      id: debtor.id,
-      debtor_name: debtor.debtor_name || '',
-      amount_due: String(debtor.amount_due || ''),
-      product_name: debtor.product_name || '',
-      phone: debtor.phone || '',
-      dni: debtor.dni || '',
-      due_date: debtor.due_date || '',
-    });
-    setActiveTab('debtors');
-  };
-
-  const deleteDebtor = async (debtorId: string) => {
-    if (!confirm('Seguro que queres borrar este deudor?')) return;
-    const { error } = await supabase.from('debtors').delete().eq('id', debtorId);
-    setMessage(error ? `No se pudo borrar: ${error.message}` : 'Deudor eliminado.');
-    await loadData();
-  };
-
-  const markDebtorAsPaid = async (debtorId: string) => {
-    const { error } = await supabase
-      .from('debtors')
-      .update({ status: 'paid', paid_at: new Date().toISOString() })
-      .eq('id', debtorId);
-
-    setMessage(error ? `No se pudo marcar como pagado: ${error.message}` : 'Deudor marcado como pagado.');
     await loadData();
   };
 
@@ -1065,42 +890,6 @@ export default function CustomPanel() {
     setMessage(error ? `No se pudo eliminar el cupón: ${error.message}` : 'Cupón eliminado.');
     if (!error && couponForm.id === couponId) setCouponForm(emptyCoupon);
     if (!error) await loadData();
-  };
-
-  const exportDebtorsCsv = () => {
-    const rows = debtors.map((debtor) => ({
-      estado: debtor.status === 'paid' || debtor.paid_at ? 'Pagado' : 'Pendiente',
-      nombre: debtor.debtor_name,
-      producto: debtor.product_name,
-      debe: debtor.amount_due,
-      celular: debtor.phone || '',
-      dni: debtor.dni || '',
-      fecha_pago_prometida: debtor.due_date || '',
-      cargado: new Date(debtor.created_at).toLocaleDateString('es-AR'),
-      pagado: debtor.paid_at ? new Date(debtor.paid_at).toLocaleDateString('es-AR') : '',
-    }));
-
-    const headers = Object.keys(rows[0] || {
-      estado: '',
-      nombre: '',
-      producto: '',
-      debe: '',
-      celular: '',
-      dni: '',
-      fecha_pago_prometida: '',
-      cargado: '',
-      pagado: '',
-    });
-
-    const escapeCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-    const csv = [headers.join(','), ...rows.map((row) => headers.map((header) => escapeCell(row[header as keyof typeof row])).join(','))].join('\n');
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `deudores-speedy-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -2139,133 +1928,6 @@ export default function CustomPanel() {
         </div>
       ) : null}
 
-      {activeTab === 'testimonials' ? (
-        <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-          <form onSubmit={saveTestimonial} className={`${panelClass} space-y-3`}>
-            <h2 className="text-xl font-bold text-white">{testimonialForm.id ? 'Editar reseña' : 'Nueva reseña'}</h2>
-            <label className={labelClass}>Nombre<input required className={fieldClass} value={testimonialForm.nombre} onChange={(e) => setTestimonialForm({ ...testimonialForm, nombre: e.target.value })} /></label>
-            <label className={labelClass}>Mensaje<textarea required className={`${fieldClass} min-h-24`} value={testimonialForm.mensaje} onChange={(e) => setTestimonialForm({ ...testimonialForm, mensaje: e.target.value })} /></label>
-            <div className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-gray-300">
-              Usa la imagen general de MotoSport Neuquén y el orden se asigna automaticamente al crear.
-            </div>
-            <label className={`${labelClass} flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3`}>
-              <input type="checkbox" checked={testimonialForm.activo} onChange={(e) => setTestimonialForm({ ...testimonialForm, activo: e.target.checked })} />
-              <span>Mostrar reseña</span>
-            </label>
-            <div className="flex gap-2">
-              <button disabled={saving} className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 font-bold text-black disabled:opacity-60">
-                <Save className="h-4 w-4" />
-                Guardar reseña
-              </button>
-              <button type="button" onClick={() => setTestimonialForm(emptyTestimonial)} className="rounded-md border border-white/20 px-4 py-2 text-gray-200">Limpiar</button>
-            </div>
-          </form>
-
-          <div className={`${panelClass} space-y-2`}>
-            {sortedTestimonials.length === 0 ? (
-              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-gray-300">
-                Todavia no hay reseñas cargadas.
-              </div>
-            ) : null}
-            {sortedTestimonials.map((testimonial) => (
-              <div key={testimonial.id} className="rounded-md border border-white/10 bg-white/5 p-4 text-gray-200">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-xl font-bold text-white">{testimonial.nombre}</p>
-                    <p className="mt-2 text-sm text-gray-300">{testimonial.mensaje}</p>
-                    <p className="mt-2 text-xs text-gray-500">{testimonial.activo ? 'Visible' : 'Oculta'} · orden automático</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => editTestimonial(testimonial)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button>
-                    <button onClick={() => deleteTestimonial(testimonial.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {activeTab === 'debtors' ? (
-        <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-          <form onSubmit={saveDebtor} className={`${panelClass} space-y-3`}>
-            <h2 className="text-xl font-bold text-white">{debtorForm.id ? 'Editar deudor' : 'Nuevo deudor'}</h2>
-            <label className={labelClass}>Nombre<input required className={fieldClass} value={debtorForm.debtor_name} onChange={(e) => setDebtorForm({ ...debtorForm, debtor_name: e.target.value })} /></label>
-            <label className={labelClass}>Precio que debe<input required type="number" min="0" className={fieldClass} value={debtorForm.amount_due} onChange={(e) => setDebtorForm({ ...debtorForm, amount_due: e.target.value })} /></label>
-            <label className={labelClass}>Producto que compro<input required className={fieldClass} value={debtorForm.product_name} onChange={(e) => setDebtorForm({ ...debtorForm, product_name: e.target.value })} /></label>
-            <div className="border-t border-white/10 pt-3">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-gray-400">Opcional</p>
-              <div className="space-y-3">
-                <label className={labelClass}>Numero de celu<input className={fieldClass} value={debtorForm.phone} onChange={(e) => setDebtorForm({ ...debtorForm, phone: e.target.value })} /></label>
-                <label className={labelClass}>DNI<input className={fieldClass} value={debtorForm.dni} onChange={(e) => setDebtorForm({ ...debtorForm, dni: e.target.value })} /></label>
-                <label className={labelClass}>Cuando viene a pagar<input type="date" className={fieldClass} value={debtorForm.due_date} onChange={(e) => setDebtorForm({ ...debtorForm, due_date: e.target.value })} /></label>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button disabled={saving} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-2 font-bold text-black"><Save className="h-4 w-4" />Guardar deudor</button>
-              <button type="button" onClick={() => setDebtorForm(emptyDebtor)} className="rounded-md border border-white/20 px-4 py-2 text-gray-200">Limpiar</button>
-            </div>
-          </form>
-          <div className={`${panelClass} space-y-2`}>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <h2 className="text-xl font-bold text-white">Deudores pendientes</h2>
-              <button type="button" onClick={exportDebtorsCsv} className="inline-flex items-center gap-2 rounded-md border border-white/20 px-4 py-2 text-sm font-bold text-white">
-                <Download className="h-4 w-4" />
-                Exportar CSV
-              </button>
-            </div>
-            {pendingDebtors.length === 0 ? (
-              <div className="rounded-md border border-white/10 bg-white/5 p-3 text-gray-300">
-                No hay deudores pendientes.
-              </div>
-            ) : null}
-            {pendingDebtors.map((debtor) => (
-              <div key={debtor.id} className="rounded-md border border-white/10 bg-white/5 p-4 text-gray-200">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-xl font-bold text-white">{debtor.debtor_name}</p>
-                    <p className="mt-1 text-sm text-gray-300">{debtor.product_name}</p>
-                    {debtor.phone ? <p className="mt-2 text-sm text-gray-400">Cel: {debtor.phone}</p> : null}
-                    {debtor.dni ? <p className="text-sm text-gray-400">DNI: {debtor.dni}</p> : null}
-                    {debtor.due_date ? <p className="text-sm text-gray-400">Viene a pagar: {debtor.due_date}</p> : null}
-                  </div>
-                  <div className="shrink-0 rounded-xl border border-purple-700/80 bg-purple-950/50 px-4 py-3 text-center">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-300">Debe</p>
-                    <p className="mt-1 text-2xl font-black text-white">{formatARS(Math.round(debtor.amount_due || 0))}</p>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <button onClick={() => markDebtorAsPaid(debtor.id)} className="rounded bg-green-500/20 p-2 text-green-300" title="Marcar como pagado"><CheckCircle className="h-4 w-4" /></button>
-                  <button onClick={() => editDebtor(debtor)} className="rounded bg-white/10 p-2"><Edit className="h-4 w-4" /></button>
-                  <button onClick={() => deleteDebtor(debtor.id)} className="rounded bg-purple-500/20 p-2 text-purple-300"><Trash2 className="h-4 w-4" /></button>
-                  <p className="ml-auto text-xs text-gray-500">{new Date(debtor.created_at).toLocaleDateString('es-AR')}</p>
-                </div>
-              </div>
-            ))}
-            {paidDebtors.length > 0 ? (
-              <div className="mt-6 border-t border-white/10 pt-4">
-                <h2 className="mb-3 text-xl font-bold text-white">Historial pagado</h2>
-                <div className="space-y-2">
-                  {paidDebtors.map((debtor) => (
-                    <div key={debtor.id} className="rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-gray-200">
-                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <p className="font-bold text-white">{debtor.debtor_name}</p>
-                          <p className="text-gray-300">{debtor.product_name}</p>
-                        </div>
-                        <div className="text-left md:text-right">
-                          <p className="font-black text-green-200">{formatARS(Math.round(debtor.amount_due || 0))}</p>
-                          <p className="text-xs text-gray-400">{debtor.paid_at ? new Date(debtor.paid_at).toLocaleDateString('es-AR') : 'Pagado'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
