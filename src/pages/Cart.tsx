@@ -153,11 +153,11 @@ export default function Cart() {
         error?: string;
       };
       if (!response.ok) {
-        setShippingMessage(data.error || 'No se pudo cotizar el envío.');
+        setShippingMessage(data.error || 'Coordinamos el despacho a tu zona directamente por WhatsApp.');
       } else {
         setShippingQuotes(data.quotes || []);
-        if (data.unavailable?.length) {
-          setShippingMessage(data.unavailable.map((u) => `${u.provider}: ${u.reason}`).join(' · '));
+        if (!data.quotes || data.quotes.length === 0) {
+          setShippingMessage('Coordinamos el envío y el medio más conveniente directamente por WhatsApp una vez confirmado tu pedido.');
         }
         // Check if all items have free shipping
         const allFreeShipping = cartItems.every((item) => item.free_shipping);

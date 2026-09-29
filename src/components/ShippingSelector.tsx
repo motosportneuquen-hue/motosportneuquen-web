@@ -31,7 +31,16 @@ const localPickup: ShippingQuote = {
   price: 0,
 };
 
+const coordinateShipping: ShippingQuote = {
+  id: 'coordinate-shipping',
+  provider: 'Envío por Andreani / Correo Argentino',
+  service: 'A coordinar con el local',
+  deliveryType: 'Domicilio',
+  price: 0,
+};
+
 function QuoteOption({ quote, selected, onSelect, badges }: { quote: ShippingQuote; selected: boolean; onSelect: () => void; badges?: string[] }) {
+  const isCoordinate = quote.id === 'coordinate-shipping';
   return (
     <label className={`flex cursor-pointer gap-4 rounded-xl border p-4 transition sm:p-5 ${selected ? 'border-primary bg-primary/[0.06]' : 'border-white/10 bg-white/[0.02] hover:border-white/25'}`}>
       <input type="radio" name="shipping" checked={selected} onChange={onSelect} className="mt-1 h-5 w-5 accent-[#56f000]" />
@@ -45,13 +54,15 @@ function QuoteOption({ quote, selected, onSelect, badges }: { quote: ShippingQuo
           ))}
         </span>
         <span className="mt-1 block text-sm text-white/45">
-          {quote.deliveryDaysMin
-            ? `Llega en ${quote.deliveryDaysMin}${quote.deliveryDaysMax && quote.deliveryDaysMax !== quote.deliveryDaysMin ? ` a ${quote.deliveryDaysMax}` : ''} días hábiles`
-            : quote.deliveryType === 'Sucursal' ? 'Retiro en la sucursal seleccionada' : 'El plazo se confirma al despachar'}
+          {isCoordinate
+            ? 'Coordinamos el despacho a tu domicilio o sucursal por WhatsApp.'
+            : quote.deliveryDaysMin
+              ? `Llega en ${quote.deliveryDaysMin}${quote.deliveryDaysMax && quote.deliveryDaysMax !== quote.deliveryDaysMin ? ` a ${quote.deliveryDaysMax}` : ''} días hábiles`
+              : quote.deliveryType === 'Sucursal' ? 'Retiro en la sucursal seleccionada' : 'El plazo se confirma al despachar'}
         </span>
       </span>
       <span className={`shrink-0 font-black ${quote.price === 0 ? 'text-primary' : 'text-white'}`}>
-        {quote.price === 0 ? 'Gratis' : formatARS(Math.round(quote.price))}
+        {quote.price === 0 ? (isCoordinate ? 'A coordinar' : 'Gratis') : formatARS(Math.round(quote.price))}
       </span>
     </label>
   );
@@ -100,8 +111,10 @@ export default function ShippingSelector({
     if (quotes.length > 0 && !selected) {
       const cheapest = [...quotes].filter((q) => q.deliveryType !== 'Local').sort((a, b) => a.price - b.price)[0];
       if (cheapest) onSelect(cheapest);
+    } else if (quotes.length === 0 && !selected && calculated) {
+      onSelect(coordinateShipping);
     }
-  }, [quotes, selected, onSelect]);
+  }, [quotes, selected, onSelect, calculated]);
 
   return (
     <div className="mb-5 overflow-hidden rounded-xl border border-white/15 bg-[#080808]">
@@ -167,6 +180,17 @@ export default function ShippingSelector({
               <div className="space-y-3">
                 {branchQuotes.map((quote) => <QuoteOption key={quote.id} quote={quote} selected={selected?.id === quote.id} onSelect={() => onSelect(quote)} badges={getBadges(quote.id)} />)}
               </div>
+            </section>
+          ) : null}
+
+          {!homeQuotes.length && !branchQuotes.length ? (
+            <section className="mb-6">
+              <h4 className="mb-3 flex items-center gap-3 font-bold text-white"><Truck className="h-5 w-5 text-primary" /> Envío a domicilio o sucursal</h4>
+              <QuoteOption
+                quote={coordinateShipping}
+                selected={selected?.id === coordinateShipping.id}
+                onSelect={() => onSelect(coordinateShipping)}
+              />
             </section>
           ) : null}
 
