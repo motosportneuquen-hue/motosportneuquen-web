@@ -1,5 +1,6 @@
 {
   "name": "motosportneuquen-web",
+  "account_id": "83df7f7678bda8452bcee68ac319ef45",
   "compatibility_date": "2026-07-07",
   "main": "worker/index.ts",
   "vars": {
