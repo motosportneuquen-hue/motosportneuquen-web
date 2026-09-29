@@ -4,6 +4,11 @@ interface Env {
   CORREO_API_USER?: string;
   CORREO_API_PASSWORD?: string;
   CORREO_CUSTOMER_ID?: string;
+  ANDREANI_USER?: string;
+  ANDREANI_PASS?: string;
+  ANDREANI_CLIENT_CODE?: string;
+  ANDREANI_CONTRACT_DOMICILIO?: string;
+  ANDREANI_CONTRACT_SUCURSAL?: string;
   MERCADO_PAGO_ACCESS_TOKEN?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
@@ -439,6 +444,80 @@ async function correoToken(env: Env) {
   return payload.token;
 }
 
+async function andreaniLogin(env: Env): Promise<string> {
+  if (!env.ANDREANI_USER || !env.ANDREANI_PASS) throw new Error('Faltan credenciales de Andreani.');
+  const credentials = btoa(`${env.ANDREANI_USER}:${env.ANDREANI_PASS}`);
+  const response = await fetch('https://apis.andreani.com/login', {
+    method: 'GET',
+    headers: { Authorization: `Basic ${credentials}` },
+  });
+  if (!response.ok) throw new Error(`Andreani rechazó la autenticación (${response.status}).`);
+  const token = response.headers.get('x-authorization-token');
+  if (!token) throw new Error('Andreani no devolvió el token de sesión.');
+  return token;
+}
+
+async function quoteAndreani(
+  env: Env,
+  destinationPostalCode: string,
+  parcel: Required<NonNullable<QuoteRequest['parcel']>>,
+) {
+  const token = await andreaniLogin(env);
+  const kilos = Math.max(parcel.weightGrams / 1000, 0.1);
+  const volumen = parcel.lengthCm * parcel.widthCm * parcel.heightCm;
+  const contracts = [
+    { contrato: env.ANDREANI_CONTRACT_DOMICILIO!, deliveryType: 'Domicilio' },
+    { contrato: env.ANDREANI_CONTRACT_SUCURSAL!, deliveryType: 'Sucursal' },
+  ].filter((c) => c.contrato);
+
+  const results: Array<{
+    id: string;
+    provider: string;
+    service: string;
+    deliveryType: string;
+    price: number;
+    deliveryDaysMin?: number;
+    deliveryDaysMax?: number;
+  }> = [];
+
+  for (const { contrato, deliveryType } of contracts) {
+    const params = new URLSearchParams({
+      cliente: env.ANDREANI_CLIENT_CODE!,
+      contrato,
+      cpDestino: destinationPostalCode.replace(/^[A-Z]/i, '').replace(/[A-Z]+$/i, ''),
+      'bultos[0][kilos]': kilos.toFixed(2),
+      'bultos[0][volumen]': String(volumen),
+      'bultos[0][largoCm]': String(parcel.lengthCm),
+      'bultos[0][anchoCm]': String(parcel.widthCm),
+      'bultos[0][altoCm]': String(parcel.heightCm),
+      'bultos[0][valorDeclarado]': '1',
+    });
+
+    try {
+      const response = await fetch(`https://apis.andreani.com/v1/tarifas?${params}`, {
+        headers: { 'x-authorization-token': token },
+      });
+      if (!response.ok) continue;
+      const data = (await response.json()) as {
+        tarifaConIva?: { total?: string };
+      };
+      const price = Number(data.tarifaConIva?.total || 0);
+      if (price > 0) {
+        results.push({
+          id: `andreani-${deliveryType.toLowerCase()}`,
+          provider: 'Andreani',
+          service: deliveryType === 'Sucursal' ? 'Retiro en punto Andreani' : 'Envío a domicilio',
+          deliveryType,
+          price,
+        });
+      }
+    } catch {
+      // silently skip this contract type
+    }
+  }
+  return results;
+}
+
 async function quoteCorreo(env: Env, destinationPostalCode: string, parcel: Required<NonNullable<QuoteRequest['parcel']>>) {
   const token = await correoToken(env);
   const response = await fetch('https://api.correoargentino.com.ar/micorreo/v1/rates', {
@@ -511,9 +590,10 @@ async function handleQuote(request: Request, env: Env) {
   }
   if (parcel.weightGrams > 25000) return json({ error: 'El paquete supera el límite de 25 kg.' }, 400);
 
-  const configured =
-    env.CORREO_API_USER && env.CORREO_API_PASSWORD && env.CORREO_CUSTOMER_ID;
-  if (!configured) {
+  const correoConfigured = env.CORREO_API_USER && env.CORREO_API_PASSWORD && env.CORREO_CUSTOMER_ID;
+  const andreaniConfigured = env.ANDREANI_USER && env.ANDREANI_PASS && env.ANDREANI_CLIENT_CODE;
+
+  if (!correoConfigured && !andreaniConfigured) {
     return json({
       quotes: [],
       unavailable: [
@@ -523,14 +603,315 @@ async function handleQuote(request: Request, env: Env) {
     });
   }
 
+  const promises: Array<Promise<Array<{ id: string; provider: string; service: string; deliveryType: string; price: number; deliveryDaysMin?: number; deliveryDaysMax?: number }>>> = [];
+  const unavailable: Array<{ provider: string; reason: string }> = [];
+
+  if (correoConfigured) {
+    promises.push(quoteCorreo(env, destination, parcel));
+  } else {
+    promises.push(Promise.resolve([]));
+    unavailable.push({ provider: 'Correo Argentino', reason: 'Falta cargar la cuenta API en Cloudflare.' });
+  }
+
+  if (andreaniConfigured) {
+    promises.push(quoteAndreani(env, destination, parcel));
+  } else {
+    promises.push(Promise.resolve([]));
+    unavailable.push({ provider: 'Andreani', reason: 'Falta cargar la credencial comercial de Andreani.' });
+  }
+
   try {
-    const quotes = await quoteCorreo(env, destination, parcel);
-    return json({
-      quotes,
-      unavailable: [{ provider: 'Andreani', reason: 'Falta cargar la credencial comercial de Andreani.' }],
-    });
+    const results = await Promise.allSettled(promises);
+    const quotes: Array<{ id: string; provider: string; service: string; deliveryType: string; price: number; deliveryDaysMin?: number; deliveryDaysMax?: number }> = [];
+
+    if (results[0].status === 'fulfilled') {
+      quotes.push(...results[0].value);
+    } else {
+      unavailable.push({ provider: 'Correo Argentino', reason: results[0].reason?.message || 'Error al cotizar.' });
+    }
+
+    if (results[1].status === 'fulfilled') {
+      quotes.push(...results[1].value);
+    } else {
+      unavailable.push({ provider: 'Andreani', reason: results[1].reason?.message || 'Error al cotizar.' });
+    }
+
+    return json({ quotes, unavailable: unavailable.length ? unavailable : undefined });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'No se pudo cotizar el envío.' }, 502);
+  }
+}
+async function handleShippingCreate(request: Request, env: Env) {
+  let body: { orderId?: string; provider?: string };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: 'Solicitud inv\u00e1lida.' }, 400);
+  }
+  const orderId = String(body.orderId || '').trim();
+  const provider = String(body.provider || '').trim();
+  if (!validUuid(orderId)) return json({ error: 'Pedido inv\u00e1lido.' }, 400);
+  if (!['andreani', 'correo_argentino'].includes(provider)) {
+    return json({ error: 'Proveedor inv\u00e1lido. Usar "andreani" o "correo_argentino".' }, 400);
+  }
+
+  try {
+    const order = await readOrderDetails(env, orderId);
+    if (!order) return json({ error: 'El pedido no existe.' }, 404);
+
+    // Calculate consolidated parcel from order items
+    const totalWeight = (order.order_items || []).reduce((sum, item) => sum + item.quantity, 0) * 500; // fallback weight
+    const weightKg = Math.max(totalWeight / 1000, 0.1);
+
+    let trackingNumber = '';
+    let externalId = '';
+
+    if (provider === 'andreani') {
+      if (!env.ANDREANI_USER || !env.ANDREANI_PASS || !env.ANDREANI_CLIENT_CODE) {
+        return json({ error: 'Faltan credenciales de Andreani.' }, 503);
+      }
+      const token = await andreaniLogin(env);
+      const contrato = env.ANDREANI_CONTRACT_DOMICILIO || env.ANDREANI_CONTRACT_SUCURSAL || '';
+
+      const cpNumeric = (order.customer_postal_code || '8300')
+        .replace(/^[A-Z]/i, '').replace(/[A-Z]+$/i, '');
+
+      const payload = {
+        contrato,
+        origen: {
+          postal: {
+            codigoPostal: env.SHIPPING_ORIGIN_POSTAL_CODE || '8300',
+            calle: 'Cacique Catriel',
+            numero: '154',
+            localidad: 'Neuqu\u00e9n',
+            pais: 'Argentina',
+          },
+        },
+        destino: {
+          postal: {
+            codigoPostal: cpNumeric,
+            calle: order.customer_address || '',
+            numero: '',
+            localidad: order.customer_locality || '',
+            region: '',
+            pais: 'Argentina',
+          },
+        },
+        remitente: {
+          nombreCompleto: 'MotoSport Neuqu\u00e9n',
+          email: env.ORDER_NOTIFICATION_EMAIL || '',
+          telefonos: [{ tipo: 1, numero: '2995343094' }],
+        },
+        destinatario: [{
+          nombreCompleto: order.customer_name || 'Cliente',
+          email: order.customer_email || '',
+          telefonos: [{ tipo: 1, numero: (order.customer_phone || '').replace(/\D/g, '') }],
+        }],
+        productoAEntregar: `Pedido #${order.id.slice(0, 8).toUpperCase()}`,
+        bultos: [{
+          kilos: weightKg,
+          largoCm: 30,
+          altoCm: 20,
+          anchoCm: 20,
+          volumenCm: 12000,
+          valorDeclaradoSinImpuestos: Number(order.total_price) || 1,
+          valorDeclaradoConImpuestos: Number(order.total_price) || 1,
+          referencias: [{ meta: 'idCliente', contenido: order.id }],
+        }],
+      };
+
+      const response = await fetch('https://apis.andreani.com/v2/ordenes-de-envio', {
+        method: 'POST',
+        headers: {
+          'x-authorization-token': token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = (await response.json()) as {
+        bultos?: Array<{ numeroDeEnvio?: string }>;
+        estado?: string;
+        message?: string;
+      };
+      if (!response.ok) throw new Error(result.message || `Andreani rechaz\u00f3 el env\u00edo (${response.status}).`);
+
+      trackingNumber = result.bultos?.[0]?.numeroDeEnvio || '';
+      externalId = trackingNumber;
+    } else {
+      // Correo Argentino
+      if (!env.CORREO_API_USER || !env.CORREO_API_PASSWORD || !env.CORREO_CUSTOMER_ID) {
+        return json({ error: 'Faltan credenciales de Correo Argentino.' }, 503);
+      }
+      const token = await correoToken(env);
+
+      const payload = {
+        customerId: env.CORREO_CUSTOMER_ID,
+        extOrderId: order.id,
+        orderNumber: order.id.slice(0, 8).toUpperCase(),
+        recipient: {
+          name: order.customer_name || 'Cliente',
+          email: order.customer_email || '',
+          phone: (order.customer_phone || '').replace(/\D/g, ''),
+          cellPhone: (order.customer_phone || '').replace(/\D/g, ''),
+        },
+        shipping: {
+          deliveryType: 'D',
+          address: {
+            streetName: order.customer_address || '',
+            streetNumber: '',
+            floor: '',
+            apartment: '',
+            city: order.customer_locality || '',
+            provinceCode: 'Q',
+            postalCode: order.customer_postal_code || '',
+          },
+          weight: Math.round(weightKg * 1000),
+          declaredValue: Number(order.total_price) || 1,
+          height: 20,
+          length: 30,
+          width: 20,
+        },
+      };
+
+      const response = await fetch('https://api.correoargentino.com.ar/micorreo/v1/shipping/import', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(errorData?.message || `Correo Argentino rechaz\u00f3 el env\u00edo (${response.status}).`);
+      }
+
+      externalId = order.id;
+      trackingNumber = `CA-${order.id.slice(0, 8).toUpperCase()}`;
+    }
+
+    // Update order with tracking info
+    if (trackingNumber || externalId) {
+      await supabaseRequest(env, `orders?id=eq.${encodeURIComponent(orderId)}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          tracking_number: trackingNumber || undefined,
+          external_shipping_id: externalId || undefined,
+          shipping_provider: provider === 'andreani' ? 'Andreani' : 'Correo Argentino',
+          status: 'shipped',
+          updated_at: new Date().toISOString(),
+        }),
+      });
+    }
+
+    return json({ trackingNumber, externalId });
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'No se pudo crear el env\u00edo.' }, 502);
+  }
+}
+
+async function handleShippingLabel(request: Request, env: Env) {
+  const url = new URL(request.url);
+  const parts = url.pathname.split('/');
+  const trackingNumber = decodeURIComponent(parts[parts.length - 1] || '');
+  const provider = url.searchParams.get('provider') || 'andreani';
+
+  if (!trackingNumber) return json({ error: 'Falta el n\u00famero de seguimiento.' }, 400);
+
+  try {
+    if (provider === 'andreani') {
+      if (!env.ANDREANI_USER || !env.ANDREANI_PASS) {
+        return json({ error: 'Faltan credenciales de Andreani.' }, 503);
+      }
+      const token = await andreaniLogin(env);
+      const response = await fetch(
+        `https://apis.andreani.com/v2/ordenes-de-envio/${encodeURIComponent(trackingNumber)}/etiquetas`,
+        { headers: { 'x-authorization-token': token } }
+      );
+      if (!response.ok) throw new Error(`No se pudo obtener la etiqueta (${response.status}).`);
+
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/pdf')) {
+        return new Response(response.body, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="etiqueta-${trackingNumber}.pdf"`,
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
+      // JSON response with base64
+      const data = (await response.json()) as { fileBase64?: string; pdf?: string };
+      const base64 = data.fileBase64 || data.pdf;
+      if (!base64) throw new Error('Andreani no devolvi\u00f3 la etiqueta.');
+
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+      return new Response(bytes, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="etiqueta-${trackingNumber}.pdf"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    // Correo Argentino label - requires PAQ.AR API
+    return json({ error: 'La generaci\u00f3n de etiquetas de Correo Argentino requiere la API PAQ.AR. Generá la etiqueta desde el portal de MiCorreo.' }, 501);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'No se pudo obtener la etiqueta.' }, 502);
+  }
+}
+
+async function handleShippingTrack(request: Request, env: Env) {
+  const url = new URL(request.url);
+  const parts = url.pathname.split('/');
+  const trackingNumber = decodeURIComponent(parts[parts.length - 1] || '');
+  const provider = url.searchParams.get('provider') || 'andreani';
+
+  if (!trackingNumber) return json({ error: 'Falta el n\u00famero de seguimiento.' }, 400);
+
+  try {
+    if (provider === 'andreani') {
+      if (!env.ANDREANI_USER || !env.ANDREANI_PASS) {
+        return json({ error: 'Faltan credenciales de Andreani.' }, 503);
+      }
+      const token = await andreaniLogin(env);
+      const response = await fetch(
+        `https://apis.andreani.com/v1/envios/${encodeURIComponent(trackingNumber)}/trazas`,
+        { headers: { 'x-authorization-token': token } }
+      );
+      if (!response.ok) {
+        if (response.status === 404) return json({ events: [], message: 'El env\u00edo a\u00fan no tiene movimientos registrados.' });
+        throw new Error(`No se pudo consultar el seguimiento (${response.status}).`);
+      }
+      const data = (await response.json()) as {
+        eventos?: Array<{
+          Fecha?: string;
+          Estado?: string;
+          Traduccion?: string;
+          Sucursal?: string;
+        }>;
+      };
+      const events = (data.eventos || []).map((e) => ({
+        date: e.Fecha || '',
+        status: e.Estado || '',
+        description: e.Traduccion || e.Estado || '',
+        location: e.Sucursal || '',
+      }));
+      return json({ provider: 'Andreani', trackingNumber, events });
+    }
+
+    // Correo Argentino tracking
+    return json({ error: 'El seguimiento de Correo Argentino se realiza desde correoargentino.com.ar con el c\u00f3digo de seguimiento.' }, 501);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : 'No se pudo consultar el seguimiento.' }, 502);
   }
 }
 
@@ -552,6 +933,18 @@ export default {
     if (url.pathname === '/api/notifications/order') {
       if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
       return handleOrderNotification(request, env);
+    }
+    if (url.pathname === '/api/shipping/create') {
+      if (request.method !== 'POST') return json({ error: 'M\u00e9todo no permitido.' }, 405);
+      return handleShippingCreate(request, env);
+    }
+    if (url.pathname.startsWith('/api/shipping/label/')) {
+      if (request.method !== 'GET') return json({ error: 'M\u00e9todo no permitido.' }, 405);
+      return handleShippingLabel(request, env);
+    }
+    if (url.pathname.startsWith('/api/shipping/track/')) {
+      if (request.method !== 'GET') return json({ error: 'M\u00e9todo no permitido.' }, 405);
+      return handleShippingTrack(request, env);
     }
     return env.ASSETS.fetch(request);
   },

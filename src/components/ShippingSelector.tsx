@@ -1,5 +1,5 @@
 import { MapPin, Store, Truck } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatARS } from '../lib/currency';
 
 export type ShippingQuote = {
@@ -31,12 +31,19 @@ const localPickup: ShippingQuote = {
   price: 0,
 };
 
-function QuoteOption({ quote, selected, onSelect }: { quote: ShippingQuote; selected: boolean; onSelect: () => void }) {
+function QuoteOption({ quote, selected, onSelect, badges }: { quote: ShippingQuote; selected: boolean; onSelect: () => void; badges?: string[] }) {
   return (
     <label className={`flex cursor-pointer gap-4 rounded-xl border p-4 transition sm:p-5 ${selected ? 'border-primary bg-primary/[0.06]' : 'border-white/10 bg-white/[0.02] hover:border-white/25'}`}>
       <input type="radio" name="shipping" checked={selected} onChange={onSelect} className="mt-1 h-5 w-5 accent-[#56f000]" />
       <span className="min-w-0 flex-1">
-        <span className="block font-black text-white">{quote.provider} · {quote.service}</span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-black text-white">{quote.provider} · {quote.service}</span>
+          {(badges || []).map((badge) => (
+            <span key={badge} className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
+              {badge}
+            </span>
+          ))}
+        </span>
         <span className="mt-1 block text-sm text-white/45">
           {quote.deliveryDaysMin
             ? `Llega en ${quote.deliveryDaysMin}${quote.deliveryDaysMax && quote.deliveryDaysMax !== quote.deliveryDaysMin ? ` a ${quote.deliveryDaysMax}` : ''} días hábiles`
@@ -64,10 +71,37 @@ export default function ShippingSelector({
   const homeQuotes = quotes.filter((quote) => quote.deliveryType !== 'Sucursal');
   const branchQuotes = quotes.filter((quote) => quote.deliveryType === 'Sucursal');
 
+  // Smart selection: find cheapest and fastest among all quotes
+  const allCarrierQuotes = quotes.filter((q) => q.deliveryType !== 'Local');
+  const cheapestId = allCarrierQuotes.length > 0
+    ? allCarrierQuotes.reduce((min, q) => q.price < min.price ? q : min, allCarrierQuotes[0]).id
+    : null;
+  const fastestId = allCarrierQuotes.length > 0
+    ? allCarrierQuotes.reduce((fast, q) => {
+        const fastDays = fast.deliveryDaysMin ?? 99;
+        const qDays = q.deliveryDaysMin ?? 99;
+        return qDays < fastDays ? q : fast;
+      }, allCarrierQuotes[0]).id
+    : null;
+
+  const getBadges = (quoteId: string) => {
+    const badges: string[] = [];
+    if (quoteId === cheapestId) badges.push('💰 Mejor precio');
+    if (quoteId === fastestId && fastestId !== cheapestId) badges.push('⚡ Más rápido');
+    return badges;
+  };
+
   const calculate = async () => {
     setCalculated(true);
     await onCalculate();
   };
+
+  useEffect(() => {
+    if (quotes.length > 0 && !selected) {
+      const cheapest = [...quotes].filter((q) => q.deliveryType !== 'Local').sort((a, b) => a.price - b.price)[0];
+      if (cheapest) onSelect(cheapest);
+    }
+  }, [quotes, selected, onSelect]);
 
   return (
     <div className="mb-5 overflow-hidden rounded-xl border border-white/15 bg-[#080808]">
@@ -122,7 +156,7 @@ export default function ShippingSelector({
             <section className="mb-6">
               <h4 className="mb-3 flex items-center gap-3 font-bold text-white"><Truck className="h-5 w-5 text-primary" /> Envío a domicilio</h4>
               <div className="space-y-3">
-                {homeQuotes.map((quote) => <QuoteOption key={quote.id} quote={quote} selected={selected?.id === quote.id} onSelect={() => onSelect(quote)} />)}
+                {homeQuotes.map((quote) => <QuoteOption key={quote.id} quote={quote} selected={selected?.id === quote.id} onSelect={() => onSelect(quote)} badges={getBadges(quote.id)} />)}
               </div>
             </section>
           ) : null}
@@ -131,7 +165,7 @@ export default function ShippingSelector({
             <section className="mb-6">
               <h4 className="mb-3 flex items-center gap-3 font-bold text-white"><MapPin className="h-5 w-5 text-primary" /> Retirar por sucursal</h4>
               <div className="space-y-3">
-                {branchQuotes.map((quote) => <QuoteOption key={quote.id} quote={quote} selected={selected?.id === quote.id} onSelect={() => onSelect(quote)} />)}
+                {branchQuotes.map((quote) => <QuoteOption key={quote.id} quote={quote} selected={selected?.id === quote.id} onSelect={() => onSelect(quote)} badges={getBadges(quote.id)} />)}
               </div>
             </section>
           ) : null}

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { formatARS } from '../lib/currency';
 import { cartItemUnitPrice } from '../lib/cartPricing';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { type ShippingQuote } from '../components/ShippingSelector';
+import ShippingSelector, { type ShippingQuote } from '../components/ShippingSelector';
 import { type CartItem } from '../types/supabase';
 
 type PaymentMethod = 'efectivo' | 'transferencia' | 'mercado_pago' | 'tarjeta_credito' | 'tarjeta_debito';
@@ -59,7 +59,11 @@ export default function Cart() {
   const [couponPercent, setCouponPercent] = useState(0);
   const [couponMessage, setCouponMessage] = useState('');
   const [validatingCoupon, setValidatingCoupon] = useState(false);
-  const [selectedShipping] = useState<ShippingQuote | null>(null);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null);
+  const [shippingPostalCode, setShippingPostalCode] = useState('');
+  const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([]);
+  const [shippingQuoting, setShippingQuoting] = useState(false);
+  const [shippingMessage, setShippingMessage] = useState('');
   const [buyer, setBuyer] = useState<BuyerData>({
     name: '',
     phone: '',
@@ -118,6 +122,57 @@ export default function Cart() {
     setValidatingCoupon(false);
   };
 
+  const calculateShipping = async () => {
+    setShippingQuoting(true);
+    setShippingMessage('');
+    setShippingQuotes([]);
+    setSelectedShipping(null);
+    try {
+      // Consolidate parcel dimensions from cart items
+      const totalWeightGrams = cartItems.reduce((sum, item) => sum + (item.weight_grams || 500) * item.quantity, 0);
+      const maxLength = Math.max(...cartItems.map((item) => Number(item.length_cm) || 20));
+      const maxWidth = Math.max(...cartItems.map((item) => Number(item.width_cm) || 15));
+      const totalHeight = cartItems.reduce((sum, item) => sum + (Number(item.height_cm) || 10) * item.quantity, 0);
+
+      const response = await fetch('/api/shipping/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinationPostalCode: shippingPostalCode,
+          parcel: {
+            weightGrams: totalWeightGrams,
+            lengthCm: maxLength,
+            widthCm: maxWidth,
+            heightCm: Math.min(totalHeight, 150),
+          },
+        }),
+      });
+      const data = (await response.json()) as {
+        quotes?: ShippingQuote[];
+        unavailable?: Array<{ provider: string; reason: string }>;
+        error?: string;
+      };
+      if (!response.ok) {
+        setShippingMessage(data.error || 'No se pudo cotizar el envío.');
+      } else {
+        setShippingQuotes(data.quotes || []);
+        if (data.unavailable?.length) {
+          setShippingMessage(data.unavailable.map((u) => `${u.provider}: ${u.reason}`).join(' · '));
+        }
+        // Check if all items have free shipping
+        const allFreeShipping = cartItems.every((item) => item.free_shipping);
+        if (allFreeShipping && data.quotes?.length) {
+          const freeQuotes = data.quotes.map((q) => ({ ...q, price: 0 }));
+          setShippingQuotes(freeQuotes);
+        }
+      }
+    } catch {
+      setShippingMessage('Error de conexión al cotizar envío.');
+    } finally {
+      setShippingQuoting(false);
+    }
+  };
+
   const checkoutByWhatsApp = async () => {
     if (cartItems.length === 0) return;
 
@@ -166,6 +221,11 @@ export default function Cart() {
         buyer_postal_code: buyer.postalCode.trim().toUpperCase(),
         buyer_notes: buyer.notes.trim(),
         coupon_code: couponPercent > 0 ? couponCode : null,
+        shipping_provider_name: selectedShipping?.provider || null,
+        shipping_service_name: selectedShipping?.service || null,
+        shipping_method_id: selectedShipping ? (selectedShipping.provider === 'Andreani' ? 'andreani' : selectedShipping.deliveryType === 'Local' ? 'retiro_local' : 'correo_argentino') : null,
+        shipping_delivery_type: selectedShipping?.deliveryType || null,
+        shipping_cost: selectedShipping?.price || 0,
       });
 
       if (error) {
@@ -424,6 +484,7 @@ export default function Cart() {
                       onChange={(event) => {
                         const value = key === 'postalCode' ? event.target.value.toUpperCase() : event.target.value;
                         setBuyer((current) => ({ ...current, [key]: value }));
+                        if (key === 'postalCode') setShippingPostalCode(value.toUpperCase());
                       }}
                       placeholder={placeholder}
                       className="mt-1.5 min-h-11 w-full rounded-md border border-white/20 bg-black/60 px-3 py-2 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-primary"
@@ -442,6 +503,19 @@ export default function Cart() {
                 </label>
               </div>
             </div>
+            <ShippingSelector
+              postalCode={shippingPostalCode}
+              onPostalCodeChange={(value) => {
+                setShippingPostalCode(value);
+                setBuyer((current) => ({ ...current, postalCode: value }));
+              }}
+              onCalculate={calculateShipping}
+              quoting={shippingQuoting}
+              quotes={shippingQuotes}
+              selected={selectedShipping}
+              onSelect={setSelectedShipping}
+              message={shippingMessage}
+            />
             <div className="hidden">
               <label htmlFor="coupon-code" className="flex items-center gap-2 text-sm font-bold text-white">
                 <TicketPercent className="h-4 w-4 text-primary" />

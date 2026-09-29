@@ -1,4 +1,4 @@
-﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCallback } from 'react';
 import { BarChart3, Calculator, Edit, Mail, MapPin, MessageCircle, PackageCheck, Phone, RefreshCw, Save, Search, TicketPercent, Trash2, Truck, Users } from 'lucide-react';
@@ -1634,7 +1634,81 @@ export default function CustomPanel() {
                   <label className={labelClass}>Código de seguimiento<input name="tracking_number" defaultValue={order.tracking_number || ''} className={fieldClass} placeholder="Ingresá el código" /></label>
                   <label className={labelClass}>Nota interna<input name="admin_notes" defaultValue={order.admin_notes || ''} className={fieldClass} placeholder="Solo visible para el local" /></label>
                 </div>
-                <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.06] pt-4">
+                  <button
+                    type="button"
+                    disabled={saving || !order.customer_address || !!order.tracking_number}
+                    onClick={async (event) => {
+                      const providerSelect = document.querySelector<HTMLSelectElement>(`[name="shipping_provider"][form="${order.id}"]`)
+                        || (event?.target as HTMLElement)?.closest('form')?.querySelector<HTMLSelectElement>('[name="shipping_provider"]');
+                      const providerValue = providerSelect?.value || order.shipping_provider || '';
+                      const providerMap: Record<string, string> = { 'Correo Argentino': 'correo_argentino', 'Andreani': 'andreani' };
+                      const providerKey = providerMap[providerValue];
+                      if (!providerKey) {
+                        setMessage('Seleccioná un transportista (Correo Argentino o Andreani) antes de crear el envío.');
+                        return;
+                      }
+                      setSaving(true);
+                      try {
+                        const response = await fetch('/api/shipping/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ orderId: order.id, provider: providerKey }),
+                        });
+                        const data = (await response.json()) as { trackingNumber?: string; error?: string };
+                        if (!response.ok || !data.trackingNumber) {
+                          throw new Error(data.error || 'No se pudo crear el envío.');
+                        }
+                        setMessage(`Envío creado. Tracking: ${data.trackingNumber}`);
+                        await loadData();
+                      } catch (err) {
+                        setMessage(err instanceof Error ? err.message : 'Error al crear el envío.');
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-blue-400/35 bg-blue-400/10 px-4 py-2 text-xs font-black text-blue-300 transition hover:bg-blue-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Truck className="h-4 w-4" /> Crear envío automático
+                  </button>
+                  {order.tracking_number ? (
+                    <a
+                      href={`/api/shipping/label/${encodeURIComponent(order.tracking_number)}?provider=${order.shipping_provider === 'Correo Argentino' ? 'correo_argentino' : 'andreani'}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-amber-400/35 bg-amber-400/10 px-4 py-2 text-xs font-black text-amber-300 transition hover:bg-amber-400 hover:text-black"
+                    >
+                      🏷️ Imprimir etiqueta
+                    </a>
+                  ) : null}
+                  {order.tracking_number ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setSaving(true);
+                        try {
+                          const response = await fetch(`/api/shipping/track/${encodeURIComponent(order.tracking_number!)}?provider=${order.shipping_provider === 'Correo Argentino' ? 'correo_argentino' : 'andreani'}`);
+                          const data = (await response.json()) as { events?: Array<{ date: string; description: string; location: string }> };
+                          if (data.events?.length) {
+                            const lastEvent = data.events[0];
+                            setMessage(`Tracking ${order.tracking_number}: ${lastEvent.description} (${lastEvent.location || 'Sin ubicación'})`);
+                          } else {
+                            setMessage(`Tracking ${order.tracking_number}: Sin movimientos registrados aún.`);
+                          }
+                        } catch {
+                          setMessage('No se pudo consultar el seguimiento.');
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-cyan-400/35 bg-cyan-400/10 px-4 py-2 text-xs font-black text-cyan-300 transition hover:bg-cyan-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      📍 Ver tracking
+                    </button>
+                  ) : null}
+                </div>
+                <div className="mt-3 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     disabled={saving || !order.customer_phone}
