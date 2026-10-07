@@ -9,6 +9,7 @@ interface Env {
   ANDREANI_CLIENT_CODE?: string;
   ANDREANI_CONTRACT_DOMICILIO?: string;
   ANDREANI_CONTRACT_SUCURSAL?: string;
+  ENVIA_API_KEY?: string;
   MERCADO_PAGO_ACCESS_TOKEN?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   RESEND_API_KEY?: string;
@@ -563,6 +564,167 @@ async function quoteCorreo(env: Env, destinationPostalCode: string, parcel: Requ
   }));
 }
 
+function postalCodeToStateCode(cp: string): string {
+  const clean = cp.trim().toUpperCase();
+  if (/^[A-Z]\d{4}/.test(clean)) return clean[0];
+  const num = parseInt(clean.replace(/\D/g, ''), 10);
+  if (num >= 1000 && num <= 1499) return 'C';
+  if (num >= 1600 && num <= 1999) return 'B';
+  if (num >= 6000 && num <= 8199) return 'B';
+  if (num >= 5000 && num <= 5999) return 'X';
+  if (num >= 2000 && num <= 3099) return 'S';
+  if (num >= 5500 && num <= 5699) return 'M';
+  if (num >= 8300 && num <= 8399) return 'Q';
+  if (num >= 8400 && num <= 8599) return 'R';
+  if (num >= 9000 && num <= 9299) return 'U';
+  if (num >= 9300 && num <= 9499) return 'Z';
+  if (num >= 9400 && num <= 9499) return 'V';
+  if (num >= 4000 && num <= 4199) return 'T';
+  if (num >= 4400 && num <= 4599) return 'A';
+  if (num >= 4600 && num <= 4699) return 'Y';
+  if (num >= 3100 && num <= 3299) return 'E';
+  if (num >= 3300 && num <= 3399) return 'N';
+  if (num >= 3400 && num <= 3499) return 'W';
+  if (num >= 3500 && num <= 3799) return 'H';
+  if (num >= 3600 && num <= 3699) return 'P';
+  if (num >= 4200 && num <= 4399) return 'G';
+  if (num >= 4700 && num <= 4799) return 'K';
+  if (num >= 5300 && num <= 5399) return 'F';
+  if (num >= 5400 && num <= 5499) return 'J';
+  if (num >= 5700 && num <= 5899) return 'D';
+  if (num >= 6300 && num <= 6399) return 'L';
+  return 'Q';
+}
+
+async function quoteEnvia(
+  env: Env,
+  destinationPostalCode: string,
+  parcel: Required<NonNullable<QuoteRequest['parcel']>>,
+) {
+  if (!env.ENVIA_API_KEY) return [];
+  const originCp = env.SHIPPING_ORIGIN_POSTAL_CODE || '8300';
+  const destCp = destinationPostalCode.replace(/\D/g, '');
+  const originState = postalCodeToStateCode(originCp);
+  const destState = postalCodeToStateCode(destinationPostalCode);
+  const weightKg = Math.max(parcel.weightGrams / 1000, 0.1);
+
+  const carriers = ['andreani', 'correoArgentino', 'oca', 'urbano'];
+  const promises = carriers.map(async (carrier) => {
+    try {
+      const response = await fetch('https://api.envia.com/ship/rate/', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.ENVIA_API_KEY!.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          origin: {
+            name: 'MotoSport Neuquen',
+            phone: '+542995343094',
+            street: 'Cacique Catriel 154',
+            city: 'Neuquen',
+            state: originState,
+            country: 'AR',
+            postalCode: originCp,
+          },
+          destination: {
+            name: 'Cliente',
+            phone: '+541144556677',
+            street: 'Destino',
+            city: 'Destino',
+            state: destState,
+            country: 'AR',
+            postalCode: destCp,
+          },
+          packages: [
+            {
+              type: 'box',
+              content: 'Repuestos de moto',
+              amount: 1,
+              declaredValue: 5000,
+              lengthUnit: 'CM',
+              weightUnit: 'KG',
+              weight: weightKg,
+              dimensions: {
+                length: Math.max(parcel.lengthCm, 10),
+                width: Math.max(parcel.widthCm, 10),
+                height: Math.max(parcel.heightCm, 10),
+              },
+            },
+          ],
+          shipment: {
+            carrier,
+            type: 1,
+          },
+        }),
+      });
+
+      if (!response.ok) return [];
+      const jsonRes = (await response.json()) as {
+        data?: Array<{
+          carrierDescription?: string;
+          serviceDescription?: string;
+          service?: string;
+          totalPrice?: number;
+          deliveryEstimate?: string;
+          deliveryDate?: { dateDifference?: number };
+        }>;
+      };
+
+      const carrierQuotes: Array<{
+        id: string;
+        provider: string;
+        service: string;
+        deliveryType: string;
+        price: number;
+        deliveryDaysMin?: number;
+        deliveryDaysMax?: number;
+      }> = [];
+
+      for (const item of jsonRes.data || []) {
+        const price = Number(item.totalPrice || 0);
+        if (price <= 0) continue;
+        const provName = item.carrierDescription || carrier;
+        const isBranch = /sucursal/i.test(item.serviceDescription || '') || /sucursal/i.test(item.service || '');
+        const daysMatch = (item.deliveryEstimate || '').match(/(\d+)\s*-\s*(\d+)/);
+        const daysMin = daysMatch ? parseInt(daysMatch[1], 10) : item.deliveryDate?.dateDifference || 3;
+        const daysMax = daysMatch ? parseInt(daysMatch[2], 10) : (item.deliveryDate?.dateDifference ? item.deliveryDate.dateDifference + 2 : 5);
+
+        carrierQuotes.push({
+          id: `envia-${carrier}-${item.service || 'std'}`,
+          provider: provName.charAt(0).toUpperCase() + provName.slice(1),
+          service: item.serviceDescription || 'Envío estándar',
+          deliveryType: isBranch ? 'Sucursal' : 'Domicilio',
+          price,
+          deliveryDaysMin: daysMin,
+          deliveryDaysMax: daysMax,
+        });
+      }
+      return carrierQuotes;
+    } catch {
+      return [];
+    }
+  });
+
+  const results = await Promise.allSettled(promises);
+  const quotes: Array<{
+    id: string;
+    provider: string;
+    service: string;
+    deliveryType: string;
+    price: number;
+    deliveryDaysMin?: number;
+    deliveryDaysMax?: number;
+  }> = [];
+
+  for (const res of results) {
+    if (res.status === 'fulfilled') {
+      quotes.push(...res.value);
+    }
+  }
+  return quotes;
+}
+
 async function handleQuote(request: Request, env: Env) {
   if (!env.SHIPPING_ORIGIN_POSTAL_CODE) {
     return json({ error: 'Falta configurar el código postal de origen del local.' }, 503);
@@ -590,15 +752,15 @@ async function handleQuote(request: Request, env: Env) {
   }
   if (parcel.weightGrams > 25000) return json({ error: 'El paquete supera el límite de 25 kg.' }, 400);
 
+  const enviaConfigured = Boolean(env.ENVIA_API_KEY);
   const correoConfigured = env.CORREO_API_USER && env.CORREO_API_PASSWORD && env.CORREO_CUSTOMER_ID;
   const andreaniConfigured = env.ANDREANI_USER && env.ANDREANI_PASS && env.ANDREANI_CLIENT_CODE;
 
-  if (!correoConfigured && !andreaniConfigured) {
+  if (!enviaConfigured && !correoConfigured && !andreaniConfigured) {
     return json({
       quotes: [],
       unavailable: [
-        { provider: 'Correo Argentino', reason: 'Falta cargar la cuenta API en Cloudflare.' },
-        { provider: 'Andreani', reason: 'Falta cargar la credencial comercial de Andreani.' },
+        { provider: 'Envia.com', reason: 'Falta cargar la clave API de Envia.com en Cloudflare.' },
       ],
     });
   }
@@ -606,37 +768,38 @@ async function handleQuote(request: Request, env: Env) {
   const promises: Array<Promise<Array<{ id: string; provider: string; service: string; deliveryType: string; price: number; deliveryDaysMin?: number; deliveryDaysMax?: number }>>> = [];
   const unavailable: Array<{ provider: string; reason: string }> = [];
 
+  if (enviaConfigured) {
+    promises.push(quoteEnvia(env, destination, parcel));
+  }
   if (correoConfigured) {
     promises.push(quoteCorreo(env, destination, parcel));
-  } else {
-    promises.push(Promise.resolve([]));
-    unavailable.push({ provider: 'Correo Argentino', reason: 'Falta cargar la cuenta API en Cloudflare.' });
   }
-
   if (andreaniConfigured) {
     promises.push(quoteAndreani(env, destination, parcel));
-  } else {
-    promises.push(Promise.resolve([]));
-    unavailable.push({ provider: 'Andreani', reason: 'Falta cargar la credencial comercial de Andreani.' });
   }
 
   try {
     const results = await Promise.allSettled(promises);
     const quotes: Array<{ id: string; provider: string; service: string; deliveryType: string; price: number; deliveryDaysMin?: number; deliveryDaysMax?: number }> = [];
 
-    if (results[0].status === 'fulfilled') {
-      quotes.push(...results[0].value);
-    } else {
-      unavailable.push({ provider: 'Correo Argentino', reason: results[0].reason?.message || 'Error al cotizar.' });
+    for (const res of results) {
+      if (res.status === 'fulfilled') {
+        quotes.push(...res.value);
+      }
     }
 
-    if (results[1].status === 'fulfilled') {
-      quotes.push(...results[1].value);
-    } else {
-      unavailable.push({ provider: 'Andreani', reason: results[1].reason?.message || 'Error al cotizar.' });
+    // Deduplicate by provider + deliveryType to keep best quote per service
+    const uniqueMap = new Map<string, typeof quotes[0]>();
+    for (const q of quotes) {
+      const key = `${q.provider}-${q.deliveryType}-${q.service}`;
+      if (!uniqueMap.has(key) || uniqueMap.get(key)!.price > q.price) {
+        uniqueMap.set(key, q);
+      }
     }
 
-    return json({ quotes, unavailable: unavailable.length ? unavailable : undefined });
+    const finalQuotes = [...uniqueMap.values()].sort((a, b) => a.price - b.price);
+
+    return json({ quotes: finalQuotes });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'No se pudo cotizar el envío.' }, 502);
   }
